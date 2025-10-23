@@ -12,8 +12,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
+    // Using default keyType and incrementing
 
     /**
      * The attributes that are mass assignable.
@@ -21,12 +20,11 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'id',
-        'email',
-        'password',
-        'userable_id',
-        'userable_type',
-    ];
+         'email',
+         'password',
+         'userable_id',
+         'userable_type',
+     ];
 
     /**
      * The attributes that should be hidden for serialization.

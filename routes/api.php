@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompteController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,4 +17,20 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Routes API version 1
+Route::prefix('v1')->group(function () {
+
+    /**
+     * Routes pour les comptes
+     */
+    Route::apiResource('comptes', CompteController::class)->parameters([
+        'comptes' => 'compte'
+    ]);
+
+    // Route spécifique pour les comptes archivés (cloud pour épargne)
+    Route::get('comptes-archives', [CompteController::class, 'archives'])
+         ->middleware('can:viewArchives,App\Models\Admin')
+         ->name('comptes.archives');
 });

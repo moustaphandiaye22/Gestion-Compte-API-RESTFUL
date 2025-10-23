@@ -12,18 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             $table->string('numeroCompte');
-            $table->index('numeroCompte');
             $table->enum('type', ['Depot', 'Retrait', 'Virement']);
-            $table->index('type');
             $table->decimal('montant', 15, 2);
             $table->datetime('dateTransaction');
             $table->text('description')->nullable();
             $table->enum('statut', ['En attente', 'Validee', 'Annulee'])->default('En attente');
-            $table->index('statut');
-            $table->uuid('compte_id');
-            $table->foreign('compte_id')->references('id')->on('comptes')->onDelete('cascade');
+            $table->unsignedBigInteger('compte_id');
             $table->timestamps();
         });
     }

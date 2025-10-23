@@ -24,7 +24,6 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => (string) \Illuminate\Support\Str::uuid(),
             'email' => fake()->unique()->safeEmail(),
             'password' => static::$password ??= Hash::make('password'),
         ];

@@ -17,7 +17,6 @@ class ClientFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => (string) \Illuminate\Support\Str::uuid(),
             'prenom' => $this->faker->firstName,
             'nom' => $this->faker->lastName,
             'cni' => $this->faker->unique()->numerify('##########'),

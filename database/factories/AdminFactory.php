@@ -17,7 +17,6 @@ class AdminFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => (string) \Illuminate\Support\Str::uuid(),
             'nom' => $this->faker->name,
             'poste' => $this->faker->jobTitle,
             'date_creation' => now(),

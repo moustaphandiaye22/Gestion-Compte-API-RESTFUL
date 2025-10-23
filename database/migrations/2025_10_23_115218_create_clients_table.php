@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('clients', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->bigIncrements('id');
             $table->string('prenom');
             $table->string('nom');
-            $table->string('cni')->unique();
+            $table->string('cni');
             $table->string('telephone');
             $table->timestamp('date_creation')->useCurrent();
             $table->timestamps();
