@@ -10,20 +10,18 @@ class Compte extends Model
 {
     use HasFactory;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
+    // Using default keyType and incrementing
 
     protected $fillable = [
-        'id',
-        'numeroCompte',
-        'titulaire',
-        'type',
-        'devise',
-        'dateCreation',
-        'statut',
-        'metadata',
-        'client_id',
-    ];
+         'numeroCompte',
+         'titulaire',
+         'type',
+         'devise',
+         'dateCreation',
+         'statut',
+         'metadata',
+         'client_id',
+     ];
 
     protected $casts = [
         'dateCreation' => 'date',
@@ -34,11 +32,12 @@ class Compte extends Model
     {
         parent::boot();
 
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
-            }
+        // Global scope pour comptes non supprimés
+        static::addGlobalScope('nonSupprime', function ($builder) {
+            $builder->where('comptes.statut', '!=', 'Supprime');
+        });
 
+        static::creating(function ($model) {
             if (empty($model->numeroCompte)) {
                 // Exemple : CPT-2025-XXXXX
                 $model->numeroCompte = 'CPT-' . date('Y') . '-' . strtoupper(Str::random(6));
@@ -60,6 +59,21 @@ class Compte extends Model
     {
         $depot = $this->transactions()->where('type', 'Depot')->where('statut', 'Validee')->sum('montant');
         $retrait = $this->transactions()->where('type', 'Retrait')->where('statut', 'Validee')->sum('montant');
-        return $depot - $retrait;
+        $transfertSortant = $this->transactions()->where('type', 'Transfert')->where('statut', 'Validee')->sum('montant');
+        return $depot - $retrait - $transfertSortant;
+    }
+
+    // Scope local pour récupérer un compte par numéro
+    public function scopeNumero($query, $numero)
+    {
+        return $query->where('numeroCompte', $numero);
+    }
+
+    // Scope local pour récupérer les comptes d'un client basé sur le téléphone
+    public function scopeClient($query, $telephone)
+    {
+        return $query->whereHas('client', function ($q) use ($telephone) {
+            $q->where('telephone', $telephone);
+        });
     }
 }

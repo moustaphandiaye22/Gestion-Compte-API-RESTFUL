@@ -9,15 +9,13 @@ class Admin extends Model
 {
     use HasFactory;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
+    // Using default keyType and incrementing
 
     protected $fillable = [
-        'id',
-        'nom',
-        'poste',
-        'date_creation',
-    ];
+         'nom',
+         'poste',
+         'date_creation',
+     ];
 
     protected $casts = [
         'date_creation' => 'datetime',

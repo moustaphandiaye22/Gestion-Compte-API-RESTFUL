@@ -20,7 +20,7 @@ class CompteFactory extends Factory
             'numeroCompte' => null, // Let the model boot method generate it
             'titulaire' => $this->faker->name,
             'type' => $this->faker->randomElement(['Epargne', 'Cheque']),
-            'devise' => 'XAF',
+            'devise' => 'FCFA',
             'dateCreation' => now()->toDateString(),
             'statut' => $this->faker->randomElement(['Actif', 'Bloque', 'Ferme']),
             'metadata' => json_encode(['notes' => $this->faker->sentence]),

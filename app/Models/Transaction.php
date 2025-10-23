@@ -10,19 +10,17 @@ class Transaction extends Model
 {
     use HasFactory;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
+    // Using default keyType and incrementing
 
     protected $fillable = [
-        'id',
-        'numeroCompte',
-        'type',
-        'montant',
-        'dateTransaction',
-        'description',
-        'statut',
-        'compte_id',
-    ];
+         'numeroCompte',
+         'type',
+         'montant',
+         'dateTransaction',
+         'description',
+         'statut',
+         'compte_id',
+     ];
 
     protected $casts = [
         'dateTransaction' => 'datetime',
@@ -33,11 +31,7 @@ class Transaction extends Model
     {
         parent::boot();
 
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
-            }
-        });
+        // No UUID generation needed
     }
 
     public function compte()

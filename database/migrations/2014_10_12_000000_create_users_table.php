@@ -12,15 +12,12 @@ return new class extends Migration
     public function up(): void
     {
          Schema::create('users', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('email')->unique();
+            $table->bigIncrements('id');
+            $table->string('email');
             $table->string('password');
-            $table->uuid('userable_id');
+            $table->unsignedBigInteger('userable_id');
             $table->string('userable_type');
             $table->timestamps();
-
-            // Index pour la relation polymorphique
-            $table->index(['userable_id', 'userable_type']);
         });
     }
 

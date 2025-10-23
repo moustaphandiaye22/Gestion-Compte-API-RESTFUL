@@ -6,6 +6,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.1",
+        "darkaonline/swagger-lume": "^10.0",
+        "dedoc/scramble": "^0.12.36",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
@@ -13,6 +15,7 @@
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",
+        "codev/apidocs": "^1.0",
         "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",

@@ -159,6 +159,7 @@ return [
         /*
          * Package Service Providers...
          */
+        \SwaggerLume\ServiceProvider::class,
 
         /*
          * Application Service Providers...

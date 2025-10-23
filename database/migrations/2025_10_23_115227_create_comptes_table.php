@@ -12,18 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('comptes', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('numeroCompte')->unique();
-            $table->index('numeroCompte');
+            $table->bigIncrements('id');
+            $table->string('numeroCompte');
             $table->string('titulaire');
             $table->enum('type', ['Epargne', 'Cheque']);
-            $table->string('devise')->default('XOF');
+            $table->string('devise')->default('FCFA');
             $table->date('dateCreation');
-            $table->enum('statut', ['Actif', 'Bloque', 'Ferme'])->default('Actif');
-            $table->index('statut');
+            $table->enum('statut', ['Actif', 'Bloque', 'Ferme', 'Supprime'])->default('Actif');
             $table->json('metadata')->nullable();
-            $table->uuid('client_id');
-            $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
+            $table->unsignedBigInteger('client_id');
             $table->timestamps();
         });
     }

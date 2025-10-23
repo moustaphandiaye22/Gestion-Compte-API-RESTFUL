@@ -9,17 +9,15 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $keyType = 'string';
-    public $incrementing = false;
+    // Using default keyType and incrementing
 
     protected $fillable = [
-        'id',
-        'prenom',
-        'nom',
-        'cni',
-        'telephone',
-        'date_creation',
-    ];
+         'prenom',
+         'nom',
+         'cni',
+         'telephone',
+         'date_creation',
+     ];
 
     protected $casts = [
         'date_creation' => 'datetime',
