@@ -11,16 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('users', function (Blueprint $table) {
+        Schema::create('admins', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->uuid('userable_id');
-            $table->string('userable_type');
+            $table->string('nom');
+            $table->string('poste');
+            $table->timestamp('date_creation')->useCurrent();
             $table->timestamps();
-
-            // Index pour la relation polymorphique
-            $table->index(['userable_id', 'userable_type']);
         });
     }
 
@@ -29,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('admins');
     }
 };
