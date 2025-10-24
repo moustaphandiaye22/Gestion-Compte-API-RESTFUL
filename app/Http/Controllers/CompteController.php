@@ -10,8 +10,9 @@ use App\Http\Resources\CompteResource;
 use App\Models\Compte;
 use App\Services\CompteService;
 use App\Traits\ApiResponseTrait;
+use App\Exceptions\CompteNotFoundException;
+use App\Exceptions\UnauthorizedAccessException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * @group Comptes
@@ -104,7 +105,14 @@ class CompteController extends Controller
      */
     public function show(string $id)
     {
-        
+        $compte = Compte::find($id);
+
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Pour le moment, sans authentification, permettre l'accès
+        return new CompteResource($compte);
     }
 
     /**
@@ -141,12 +149,33 @@ class CompteController extends Controller
      */
     public function archives()
     {
-        $comptes = Compte::withoutGlobalScope('nonSupprime')
-            ->with('client')
-            ->where('statut', 'Supprime')
-            ->where('type', 'Epargne')
-            ->paginate(request('limit', 10));
+        // For archived Epargne accounts, fetch from cloud
+        if (request('type') === 'Epargne' || !request('type')) {
+            // Simulate fetching from cloud
+            $cloudData = $this->fetchFromCloud();
+            $comptes = $this->paginateCloudData($cloudData);
+        } else {
+            $comptes = Compte::withoutGlobalScope('nonSupprime')
+                 ->with('client')
+                 ->where('statut', 'Supprime')
+                 ->where('type', 'Epargne')
+                 ->paginate(request('limit', 10));
+        }
 
         return new CompteCollection($comptes);
+    }
+
+    private function fetchFromCloud()
+    {
+        // Placeholder for cloud API call
+        // In real implementation, use Http::get('https://cloud-api.example.com/archived-epargne')
+        // For demo, return empty or mock data
+        return collect([]);
+    }
+
+    private function paginateCloudData($data)
+    {
+        $perPage = request('limit', 10);
+        return $data->paginate($perPage);
     }
 }

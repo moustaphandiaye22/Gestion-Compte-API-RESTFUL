@@ -4,24 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids, SoftDeletes;
 
-    // Using default keyType and incrementing
+    public $incrementing = false;
+    protected $keyType = 'uuid';
 
     protected $fillable = [
          'prenom',
          'nom',
          'cni',
          'telephone',
-         'date_creation',
      ];
 
     protected $casts = [
-        'date_creation' => 'datetime',
-    ];
+         'id' => 'string',
+     ];
+
+
 
     public function user()
     {

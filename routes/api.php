@@ -20,17 +20,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Routes API version 1
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('rating')->group(function () {
 
     /**
      * Routes pour les comptes
      */
     Route::apiResource('comptes', CompteController::class)->parameters([
-        'comptes' => 'compte'
-    ]);
+         'comptes' => 'compte'
+     ]);
 
     // Route spécifique pour les comptes archivés (cloud pour épargne)
     Route::get('comptes-archives', [CompteController::class, 'archives'])
-         ->middleware('can:viewArchives,App\Models\Admin')
-         ->name('comptes.archives');
+          ->name('comptes.archives');
 });
