@@ -9,7 +9,7 @@
   <script src="https://unpkg.com/swagger-ui-dist@3.52.5/swagger-ui-bundle.js"></script>
   <script>
     const ui = SwaggerUIBundle({
-      url: "{{ url('/api.json') }}",
+      url: "https://gestion-compte-api-restful.onrender.com/api.json",
       dom_id: '#swagger-ui',
       presets: [
         SwaggerUIBundle.presets.apis,

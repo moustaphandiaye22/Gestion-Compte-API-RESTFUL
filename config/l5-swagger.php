@@ -20,7 +20,7 @@ return [
             ],
             'servers' => [
                 [
-                    'url' => 'https://gestion-compte-api-restful.onrender.com/api/v1',
+                    'url' => env('APP_URL') . '/api/v1',
                     'description' => 'Production server',
                 ],
             ],
