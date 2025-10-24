@@ -10,7 +10,8 @@ class Compte extends Model
 {
     use HasFactory;
 
-    // Using default keyType and incrementing
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
          'numeroCompte',
@@ -31,6 +32,13 @@ class Compte extends Model
     protected static function boot()
     {
         parent::boot();
+
+        // Generate UUID for primary key
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
 
         // Global scope pour comptes non supprimés
         static::addGlobalScope('nonSupprime', function ($builder) {

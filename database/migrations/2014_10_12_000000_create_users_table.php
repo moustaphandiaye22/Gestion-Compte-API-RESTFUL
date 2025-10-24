@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,11 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('users', function (Blueprint $table) {
-            $table->bigIncrements('id');
+        Schema::create('users', function (Blueprint $table) {
+            $table->string('id', 36)->primary();
             $table->string('email');
             $table->string('password');
-            $table->unsignedBigInteger('userable_id');
+            $table->string('userable_id', 36);
             $table->string('userable_type');
             $table->timestamps();
         });

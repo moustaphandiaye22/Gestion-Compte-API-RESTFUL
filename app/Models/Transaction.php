@@ -10,7 +10,8 @@ class Transaction extends Model
 {
     use HasFactory;
 
-    // Using default keyType and incrementing
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
          'numeroCompte',
@@ -31,7 +32,12 @@ class Transaction extends Model
     {
         parent::boot();
 
-        // No UUID generation needed
+        // Generate UUID for primary key
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
     }
 
     public function compte()

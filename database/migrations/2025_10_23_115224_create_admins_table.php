@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,13 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('admins', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('nom');
-            $table->string('poste');
-            $table->timestamp('date_creation')->useCurrent();
-            $table->timestamps();
-        });
+         Schema::create('admins', function (Blueprint $table) {
+              $table->uuid('id')->notNull()->primary();
+              $table->string('nom');
+              $table->string('poste');
+              $table->timestamp('date_creation')->useCurrent();
+              $table->timestamps();
+
+          });
     }
 
     /**

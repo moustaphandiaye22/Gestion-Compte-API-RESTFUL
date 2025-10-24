@@ -21,7 +21,6 @@ class ClientFactory extends Factory
             'nom' => $this->faker->lastName,
             'cni' => $this->faker->unique()->numerify('##########'),
             'telephone' => $this->faker->phoneNumber,
-            'date_creation' => now(),
         ];
     }
 }

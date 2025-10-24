@@ -26,11 +26,11 @@ class CompteCollection extends ResourceCollection
                 'hasPrevious' => $this->currentPage() > 1,
             ],
             'links' => [
-                'self' => $this->url($this->currentPage()),
-                'next' => $this->nextPageUrl(),
-                'previous' => $this->previousPageUrl(),
-                'first' => $this->url(1),
-                'last' => $this->url($this->lastPage()),
+                'self' => url($this->url($this->currentPage())),
+                'next' => $this->nextPageUrl() ? url($this->nextPageUrl()) : null,
+                'previous' => $this->previousPageUrl() ? url($this->previousPageUrl()) : null,
+                'first' => url($this->url(1)),
+                'last' => url($this->url($this->lastPage())),
             ],
         ];
     }
