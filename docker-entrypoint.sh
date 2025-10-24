@@ -10,7 +10,8 @@ done
 echo "Database is up - executing migrations"
 php artisan migrate --force
 
-echo "Caching configuration..."
+echo "Clearing and caching configuration..."
+php artisan config:clear
 php artisan config:cache
 
 echo "Starting Laravel application..."
