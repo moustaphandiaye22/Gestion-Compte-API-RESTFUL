@@ -18,6 +18,12 @@ return [
                     base_path('app'),
                 ],
             ],
+            'servers' => [
+                [
+                    'url' => 'https://gestion-compte-api-restful.onrender.com/api/v1',
+                    'description' => 'Production server',
+                ],
+            ],
         ],
     ],
     'defaults' => [
