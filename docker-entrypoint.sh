@@ -10,5 +10,8 @@ done
 echo "Database is up - executing migrations"
 php artisan migrate --force
 
+echo "Caching configuration..."
+php artisan config:cache
+
 echo "Starting Laravel application..."
 exec "$@"
