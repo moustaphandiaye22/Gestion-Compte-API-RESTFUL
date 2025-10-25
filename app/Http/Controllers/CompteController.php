@@ -101,18 +101,58 @@ class CompteController extends Controller
     }
 
     /**
-     * Afficher un compte spécifique
-     */
+      * Afficher un compte spécifique
+      *
+      * Récupère un compte spécifique par ID. Pour le moment, sans authentification, traiter comme admin.
+      * Recherche d'abord en local pour les comptes actifs (cheque/epargne), puis en serverless si non trouvé.
+      *
+      * @param string $id L'ID du compte
+      * @return CompteResource
+      *
+      * @response 200 {
+      *   "success": true,
+      *   "data": {
+      *     "id": "550e8400-e29b-41d4-a716-446655440000",
+      *     "numeroCompte": "C00123456",
+      *     "titulaire": "Amadou Diallo",
+      *     "type": "epargne",
+      *     "solde": 1250000,
+      *     "devise": "FCFA",
+      *     "dateCreation": "2023-03-15T00:00:00Z",
+      *     "statut": "bloque",
+      *     "motifBlocage": "Inactivité de 30+ jours",
+      *     "metadata": {
+      *       "derniereModification": "2023-06-10T14:30:00Z",
+      *       "version": 1
+      *     }
+      *   }
+      * }
+      *
+      * @response 404 {
+      *   "success": false,
+      *   "error": {
+      *     "code": "COMPTE_NOT_FOUND",
+      *     "message": "Le compte avec l'ID spécifié n'existe pas",
+      *     "details": {
+      *       "compteId": "550e8400-e29b-41d4-a716-446655440000"
+      *     }
+      *   }
+      * }
+      */
     public function show(string $id)
     {
-        $compte = Compte::find($id);
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+        $clientId = null;
+
+        // Use service to find account with search strategy
+        $compte = $this->compteService->findCompteById($id, $clientId);
 
         if (!$compte) {
             throw new CompteNotFoundException();
         }
 
-        // Pour le moment, sans authentification, permettre l'accès
-        return new CompteResource($compte);
+        return $this->successResponse(new CompteResource($compte));
     }
 
     /**

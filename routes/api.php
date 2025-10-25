@@ -19,17 +19,18 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+
 // Routes API version 1
 Route::prefix('v1')->middleware('rating')->group(function () {
 
     /**
-     * Routes pour les comptes
-     */
+      * Routes pour les comptes
+      */
     Route::apiResource('comptes', CompteController::class)->parameters([
-         'comptes' => 'compte'
-     ]);
+          'comptes' => 'compte'
+      ]);
 
     // Route spécifique pour les comptes archivés (cloud pour épargne)
     Route::get('comptes-archives', [CompteController::class, 'archives'])
-          ->name('comptes.archives');
+           ->name('comptes.archives');
 });
