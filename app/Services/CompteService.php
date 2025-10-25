@@ -77,15 +77,11 @@ class CompteService
 
         // Filtre par solde minimum/maximum
         if ($request->filled('solde_min')) {
-            $query->whereHas('transactions', function ($q) use ($request) {
-                $q->havingRaw('SUM(CASE WHEN type = \'Depot\' THEN montant ELSE -montant END) >= ?', [$request->solde_min]);
-            });
+            $query->whereRaw('(SELECT COALESCE(SUM(CASE WHEN type = \'Depot\' THEN montant ELSE -montant END), 0) FROM transactions WHERE transactions.compte_id = comptes.id) >= ?', [$request->solde_min]);
         }
 
         if ($request->filled('solde_max')) {
-            $query->whereHas('transactions', function ($q) use ($request) {
-                $q->havingRaw('SUM(CASE WHEN type = \'Depot\' THEN montant ELSE -montant END) <= ?', [$request->solde_max]);
-            });
+            $query->whereRaw('(SELECT COALESCE(SUM(CASE WHEN type = \'Depot\' THEN montant ELSE -montant END), 0) FROM transactions WHERE transactions.compte_id = comptes.id) <= ?', [$request->solde_max]);
         }
 
         return $query;
