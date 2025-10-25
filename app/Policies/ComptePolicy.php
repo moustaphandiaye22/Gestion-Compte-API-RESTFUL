@@ -17,11 +17,21 @@ class ComptePolicy
     }
 
     /**
-     * Determine whether the user can view the model.
-     */
+      * Determine whether the user can view the model.
+      */
     public function view(User $user, Compte $compte): bool
     {
-        return true;
+        // Admin can view any account
+        if ($user->userable_type === 'App\\Models\\Admin') {
+            return true;
+        }
+
+        // Client can only view their own accounts
+        if ($user->userable_type === 'App\\Models\\Client') {
+            return $user->userable_id === $compte->client_id;
+        }
+
+        return false;
     }
 
     /**

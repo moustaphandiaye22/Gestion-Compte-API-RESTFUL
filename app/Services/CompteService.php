@@ -157,8 +157,44 @@ class CompteService
     }
 
     /**
-     * Récupère les statistiques des comptes
-     */
+      * Récupère un compte spécifique par ID avec stratégie de recherche
+      */
+    public function findCompteById(string $id, ?string $clientId = null): ?Compte
+    {
+        // First, try to find in local database for active cheque or epargne accounts
+        $compte = Compte::where('id', $id)
+            ->whereIn('type', ['Cheque', 'Epargne'])
+            ->whereIn('statut', ['Actif', 'Bloque', 'Ferme'])
+            ->first();
+
+        if ($compte) {
+            // Check authorization if clientId is provided
+            if ($clientId && $compte->client_id !== $clientId) {
+                return null; // Client can only access their own accounts
+            }
+            return $compte;
+        }
+
+        // If not found locally, try serverless (placeholder)
+        return $this->findInServerless($id, $clientId);
+    }
+
+    /**
+      * Placeholder for serverless search
+      */
+    private function findInServerless(string $id, ?string $clientId = null): ?Compte
+    {
+        // In real implementation, make HTTP call to serverless API
+        // For example: Http::get("https://serverless-api.example.com/comptes/{$id}")
+        // Then map to Compte model or return null
+
+        // For demo, return null
+        return null;
+    }
+
+    /**
+      * Récupère les statistiques des comptes
+      */
     public function getComptesStats(?string $clientId = null): array
     {
         $query = Compte::query();
