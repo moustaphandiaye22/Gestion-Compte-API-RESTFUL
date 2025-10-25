@@ -6,6 +6,8 @@ return [
         'default' => [
             'api' => [
                 'title' => 'API Gestion Comptes Bancaires',
+                'version' => '1.0.0',
+                'openapi' => '3.0.0',
             ],
             'routes' => [
                 'api' => 'docs',

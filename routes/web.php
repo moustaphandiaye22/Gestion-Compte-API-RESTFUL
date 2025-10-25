@@ -22,5 +22,5 @@ Route::get('/api.json', function () {
 });
 
 Route::get('/docs', function () {
-    return view('swagger');
-})->name('l5-swagger.docs');
+    return redirect('/docs/api');
+});

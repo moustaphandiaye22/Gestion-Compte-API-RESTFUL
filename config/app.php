@@ -159,7 +159,7 @@ return [
         /*
          * Package Service Providers...
          */
-        \SwaggerLume\ServiceProvider::class,
+        \Dedoc\Scramble\ScrambleServiceProvider::class,
 
         /*
          * Application Service Providers...
