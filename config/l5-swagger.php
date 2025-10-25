@@ -8,7 +8,7 @@ return [
                 'title' => 'API Gestion Comptes Bancaires',
             ],
             'routes' => [
-                'api' => 'api/documentation',
+                'api' => 'docs',
             ],
             'paths' => [
                 'docs_json' => 'api.json',

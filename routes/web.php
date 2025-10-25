@@ -21,6 +21,6 @@ Route::get('/api.json', function () {
     return response()->file(base_path('api.json'), ['Content-Type' => 'application/json']);
 });
 
-Route::get('/api/documentation', function () {
+Route::get('/docs', function () {
     return view('swagger');
 })->name('l5-swagger.docs');
