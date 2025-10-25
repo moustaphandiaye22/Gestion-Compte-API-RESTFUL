@@ -689,10 +689,10 @@
                 }
             }
         },
-        "/docs": {
+        "/api/documentation": {
             "get": {
-                "operationId": "swagger-lume.docs",
-                "summary": "Dump api-docs.json content endpoint",
+                "operationId": "swagger-lume.api",
+                "summary": "Display Swagger API page",
                 "tags": [
                     "SwaggerLume"
                 ],
@@ -700,15 +700,12 @@
                     "200": {
                         "description": "",
                         "content": {
-                            "application/json": {
+                            "text/html": {
                                 "schema": {
                                     "type": "string"
                                 }
                             }
                         }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
                     }
                 }
             }
@@ -969,25 +966,6 @@
             }
         },
         "responses": {
-            "ModelNotFoundException": {
-                "description": "Not found",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string",
-                                    "description": "Error overview."
-                                }
-                            },
-                            "required": [
-                                "message"
-                            ]
-                        }
-                    }
-                }
-            },
             "ValidationException": {
                 "description": "Validation error",
                 "content": {
