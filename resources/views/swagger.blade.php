@@ -14,7 +14,13 @@
       presets: [
         SwaggerUIBundle.presets.apis,
         SwaggerUIBundle.presets.standalone
-      ]
+      ],
+      requestInterceptor: (request) => {
+        if (request.url.startsWith('http://')) {
+          request.url = request.url.replace('http://', 'https://');
+        }
+        return request;
+      }
     });
   </script>
 </body>
