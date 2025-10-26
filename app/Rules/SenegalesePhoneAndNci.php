@@ -29,9 +29,9 @@ class SenegalesePhoneAndNci implements ValidationRule
                 $fail('Le numéro de téléphone doit être un numéro de téléphone portable sénégalais valide avec un opérateur reconnu (Orange: 77-78, Free: 70-76, Expresso: 79). Ex: +221771234567.');
             }
         } elseif ($attribute === 'client.nci') {
-            // Senegalese CNI: 13 digits starting with birth year (19 or 20 for modern)
-            if (!preg_match('/^(19|20)[0-9]{11}$/', $value)) {
-                $fail('Le numéro CNI doit être composé de 13 chiffres commençant par l\'année de naissance (19 ou 20).');
+            // Senegalese CNI: 13 digits
+            if (!preg_match('/^[0-9]{13}$/', $value)) {
+                $fail('Le numéro CNI doit être composé de 13 chiffres.');
             }
         }
     }
