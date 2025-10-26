@@ -15,11 +15,13 @@ class Client extends Model
     protected $keyType = 'uuid';
 
     protected $fillable = [
-         'prenom',
-         'nom',
-         'cni',
-         'telephone',
-     ];
+          'prenom',
+          'nom',
+          'cni',
+          'telephone',
+          'email',
+          'adresse',
+      ];
 
     protected $casts = [
          'id' => 'string',
@@ -35,5 +37,10 @@ class Client extends Model
     public function comptes()
     {
         return $this->hasMany(Compte::class);
+    }
+
+    public function getTitulaireAttribute()
+    {
+        return $this->prenom . ' ' . $this->nom;
     }
 }

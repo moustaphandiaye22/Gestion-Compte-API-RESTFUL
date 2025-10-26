@@ -22,14 +22,15 @@ class StoreCompteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'numeroCompte' => 'nullable|string|unique:comptes,numeroCompte',
-            'titulaire' => 'required|string|max:255',
-            'type' => 'required|in:Epargne,Cheque',
+            'type' => 'required|in:Cheque,Epargne',
+            'soldeInitial' => 'required|numeric|min:10000',
             'devise' => 'nullable|string|max:10',
-            'dateCreation' => 'nullable|date',
-            'statut' => 'nullable|in:Actif,Bloque,Ferme',
-            'metadata' => 'nullable|array',
-            'client_id' => 'required|uuid|exists:clients,id',
+            'client.id' => 'nullable|uuid|exists:clients,id',
+            'client.titulaire' => 'required|string|max:255',
+            'client.nci' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci()],
+            'client.email' => 'required|email|unique:clients,email',
+            'client.telephone' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci(), 'unique:clients,telephone'],
+            'client.adresse' => 'required|string|max:255',
         ];
     }
 
@@ -39,12 +40,21 @@ class StoreCompteRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'numeroCompte.unique' => 'Ce numéro de compte existe déjà.',
-            'titulaire.required' => 'Le titulaire est obligatoire.',
             'type.required' => 'Le type de compte est obligatoire.',
-            'type.in' => 'Le type doit être Epargne ou Cheque.',
-            'client_id.required' => 'Le client est obligatoire.',
-            'client_id.exists' => 'Le client sélectionné n\'existe pas.',
+            'type.in' => 'Le type doit être Cheque ou Epargne.',
+            'soldeInitial.required' => 'Le solde initial est obligatoire.',
+            'soldeInitial.numeric' => 'Le solde initial doit être un nombre.',
+            'soldeInitial.min' => 'Le solde initial doit être supérieur ou égal à 10000.',
+            'client.titulaire.required' => 'Le titulaire est obligatoire.',
+            'client.nci.required' => 'Le numéro CNI est obligatoire.',
+            'client.email.required' => 'L\'email est obligatoire.',
+            'client.email.email' => 'L\'email doit être valide.',
+            'client.email.unique' => 'Cet email est déjà utilisé.',
+            'client.telephone.required' => 'Le téléphone est obligatoire.',
+            'client.telephone.unique' => 'Ce numéro de téléphone est déjà utilisé.',
+            'client.adresse.required' => 'L\'adresse est obligatoire.',
+            'client.telephone.*' => 'Le numéro de téléphone doit être un numéro de téléphone portable sénégalais valide avec un opérateur reconnu (Orange: 77-78, Free: 70-76, Expresso: 79). Ex: +221771234567.',
+            'client.nci.*' => 'Le numéro CNI doit être composé de 13 chiffres commençant par l\'année de naissance (19 ou 20).',
         ];
     }
 }

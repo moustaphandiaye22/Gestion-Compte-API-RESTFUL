@@ -21,7 +21,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
 // Routes API version 1
-Route::prefix('v1')->middleware('rating')->group(function () {
+Route::prefix('v1')->group(function () {
 
     /**
       * Routes pour les comptes
