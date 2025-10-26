@@ -14,20 +14,22 @@ class Compte extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-         'numeroCompte',
-         'titulaire',
-         'type',
-         'devise',
-         'dateCreation',
-         'statut',
-         'metadata',
-         'client_id',
-     ];
+          'numeroCompte',
+          'titulaire',
+          'type',
+          'devise',
+          'dateCreation',
+          'statut',
+          'metadata',
+          'client_id',
+          'dateFermeture',
+      ];
 
     protected $casts = [
-        'dateCreation' => 'date',
-        'metadata' => 'array',
-    ];
+         'dateCreation' => 'date',
+         'dateFermeture' => 'datetime',
+         'metadata' => 'array',
+     ];
 
     protected static function boot()
     {
