@@ -196,4 +196,248 @@ class CompteApiTest extends TestCase
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
     }
+
+    public function test_create_compte_successfully()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'devise' => 'FCFA',
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(201)
+                ->assertJson(['success' => true])
+                ->assertJsonStructure([
+                    'success',
+                    'message',
+                    'data' => [
+                        'id',
+                        'numeroCompte',
+                        'titulaire',
+                        'type',
+                        'solde',
+                        'devise',
+                        'dateCreation',
+                        'statut',
+                        'metadata'
+                    ]
+                ]);
+    }
+
+    public function test_create_compte_fails_with_invalid_type()
+    {
+        $data = [
+            'type' => 'InvalidType',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['type']);
+    }
+
+    public function test_create_compte_fails_with_invalid_solde_initial()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 5000, // Less than 10000
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['soldeInitial']);
+    }
+
+    public function test_create_compte_fails_with_invalid_devise()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'devise' => 'VeryLongCurrencyNameThatExceedsTenCharacters',
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['devise']);
+    }
+
+    public function test_create_compte_fails_with_invalid_client_id()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'id' => 'invalid-uuid',
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.id']);
+    }
+
+    public function test_create_compte_fails_with_invalid_titulaire()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => '', // Empty
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.titulaire']);
+    }
+
+    public function test_create_compte_fails_with_invalid_nci()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1234567890123', // Does not start with 19 or 20
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567', // Valid telephone
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.nci']);
+    }
+
+    public function test_create_compte_fails_with_invalid_email()
+    {
+        // First create a client with an email
+        Client::factory()->create(['email' => 'existing@example.com']);
+
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'existing@example.com', // Duplicate
+                'telephone' => '+221771234567',
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.email']);
+    }
+
+    public function test_create_compte_fails_with_invalid_telephone()
+    {
+        // First create a client with a telephone
+        Client::factory()->create(['telephone' => '+221771234567']);
+
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567', // Duplicate
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.telephone']);
+    }
+
+    public function test_create_compte_fails_with_invalid_telephone_pattern()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221991234567', // Invalid operator
+                'adresse' => 'Dakar, Senegal'
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.telephone']);
+    }
+
+    public function test_create_compte_fails_with_invalid_adresse()
+    {
+        $data = [
+            'type' => 'Cheque',
+            'soldeInitial' => 50000,
+            'client' => [
+                'titulaire' => 'John Doe',
+                'nci' => '1990123456789',
+                'email' => 'john.doe@example.com',
+                'telephone' => '+221771234567',
+                'adresse' => '' // Empty
+            ]
+        ];
+
+        $response = $this->postJson('/api/v1/comptes', $data);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['client.adresse']);
+    }
 }
