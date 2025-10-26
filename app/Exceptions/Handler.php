@@ -28,6 +28,24 @@ class Handler extends ExceptionHandler
         });
     }
 
+    /**
+     * Render an exception into an HTTP response.
+     */
+    public function render($request, Throwable $e)
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => get_class($e),
+                    'message' => $e->getMessage(),
+                ]
+            ], 403);
+        }
+
+        return parent::render($request, $e);
+    }
+
 
 
 

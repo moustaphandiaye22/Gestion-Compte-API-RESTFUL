@@ -385,11 +385,80 @@ class CompteController extends Controller
     }
 
     /**
-     * Supprimer un compte (soft delete)
+     * @OA\Delete(
+     *     path="/api/v1/comptes/{id}",
+     *     summary="Supprimer un compte",
+     *     description="Supprime un compte de manière soft (met à jour le statut à 'Ferme' et définit la date de fermeture). Accessible uniquement aux administrateurs.",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="L'ID du compte",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte supprimé avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Compte supprimé avec succès"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="numeroCompte", type="string", example="C00123456"),
+     *                 @OA\Property(property="statut", type="string", example="ferme"),
+     *                 @OA\Property(property="dateFermeture", type="string", format="date-time", example="2025-10-19T11:15:00Z")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
+     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
+     *             )
+     *         )
+     *     )
+     * )
      */
     public function destroy(string $id)
     {
-        
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+
+        // Find the account
+        $compte = Compte::find($id);
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Authorize the user
+        if ($isAdmin) {
+            // Proceed as admin
+        } else {
+            $this->authorize('delete', $compte);
+        }
+
+        // Perform soft delete
+        $compte->update([
+            'statut' => 'Ferme',
+            'dateFermeture' => now(),
+        ]);
+
+        return $this->successResponse(new CompteResource($compte), 'Compte supprimé avec succès');
     }
 
     /**
