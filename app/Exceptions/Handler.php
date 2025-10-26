@@ -28,41 +28,9 @@ class Handler extends ExceptionHandler
         });
     }
 
-    /**
-     * Convert a validation exception into a JSON response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function buildValidationErrorResponse($request, $exception)
-    {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => 'VALIDATION_ERROR',
-                'message' => 'Les données fournies sont invalides',
-                'details' => $exception->errors(),
-            ],
-        ], 422);
-    }
 
-    /**
-     * Convert a validation exception into a JSON response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function convertValidationExceptionToResponse($request, $exception)
-    {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => 'VALIDATION_ERROR',
-                'message' => 'Les données fournies sont invalides',
-                'details' => $exception->errors(),
-            ],
-        ], 422);
-    }
+
+
+
+
 }

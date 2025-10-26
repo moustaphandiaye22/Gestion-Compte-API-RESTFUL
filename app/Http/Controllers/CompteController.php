@@ -230,6 +230,14 @@ class CompteController extends Controller
 
     private function findOrCreateClient(array $clientData): array
     {
+         // If client.id is provided, try to find by id
+         if (isset($clientData['id']) && !empty($clientData['id'])) {
+             $client = Client::find($clientData['id']);
+             if ($client) {
+                 return [$client, null];
+             }
+         }
+
          // Check if client exists by email or telephone
          $client = Client::where('email', $clientData['email'])
                          ->orWhere('telephone', $clientData['telephone'])

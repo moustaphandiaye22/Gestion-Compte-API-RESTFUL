@@ -25,11 +25,11 @@ class StoreCompteRequest extends FormRequest
             'type' => 'required|in:Cheque,Epargne',
             'soldeInitial' => 'required|numeric|min:10000',
             'devise' => 'nullable|string|max:10',
-            'client.id' => 'nullable|uuid|exists:clients,id',
+            'client.id' => 'nullable|uuid',
             'client.titulaire' => 'required|string|max:255',
             'client.nci' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci()],
-            'client.email' => 'required|email|unique:clients,email',
-            'client.telephone' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci(), 'unique:clients,telephone'],
+            'client.email' => 'required|email',
+            'client.telephone' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci()],
             'client.adresse' => 'required|string|max:255',
         ];
     }
