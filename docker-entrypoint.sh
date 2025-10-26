@@ -17,6 +17,7 @@ php artisan db:seed --force
 echo "Clearing and caching configuration..."
 php artisan config:clear
 php artisan config:cache
+php artisan view:cache
 
 echo "Starting Laravel application..."
 exec "$@"
