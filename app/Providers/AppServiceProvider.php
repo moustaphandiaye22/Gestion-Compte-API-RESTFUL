@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\SmsServiceInterface;
 use App\Services\TwilioSmsService;
+use App\Services\MockSmsService;
 use Illuminate\Contracts\Routing\ResponseFactory as ResponseFactoryContract;
 use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\ServiceProvider;

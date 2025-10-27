@@ -19,5 +19,8 @@ php artisan config:clear
 php artisan config:cache
 php artisan view:cache
 
+echo "Processing queued jobs..."
+php artisan queue:work --once --tries=3 --timeout=30
+
 echo "Starting Laravel application..."
 exec "$@"

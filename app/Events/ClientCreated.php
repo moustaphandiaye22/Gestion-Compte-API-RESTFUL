@@ -5,8 +5,9 @@ namespace App\Events;
 use App\Models\Client;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ClientCreated
+class ClientCreated implements ShouldQueue
 {
     use Dispatchable, SerializesModels;
 
