@@ -61,7 +61,7 @@ class CompteApiTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes');
+        ])->get('/ndiaye/v1/comptes');
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
@@ -103,7 +103,7 @@ class CompteApiTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->clientToken,
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes');
+        ])->get('/ndiaye/v1/comptes');
 
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
@@ -122,7 +122,7 @@ class CompteApiTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes?type=Epargne');
+        ])->get('/ndiaye/v1/comptes?type=Epargne');
 
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
@@ -138,7 +138,7 @@ class CompteApiTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes?statut=Actif');
+        ])->get('/ndiaye/v1/comptes?statut=Actif');
 
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
@@ -154,7 +154,7 @@ class CompteApiTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes?page=1&limit=5');
+        ])->get('/ndiaye/v1/comptes?page=1&limit=5');
 
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
@@ -172,7 +172,7 @@ class CompteApiTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->adminToken,
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes?sort=dateCreation&order=desc');
+        ])->get('/ndiaye/v1/comptes?sort=dateCreation&order=desc');
 
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
@@ -191,7 +191,7 @@ class CompteApiTest extends TestCase
     {
         $response = $this->withHeaders([
             'Accept' => 'application/json',
-        ])->get('/api/v1/comptes');
+        ])->get('/ndiaye/v1/comptes');
 
         $response->assertStatus(200)
                 ->assertJson(['success' => true]);
@@ -212,7 +212,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(201)
                 ->assertJson(['success' => true])
@@ -247,7 +247,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['type']);
@@ -267,7 +267,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['soldeInitial']);
@@ -288,7 +288,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['devise']);
@@ -309,7 +309,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.id']);
@@ -329,7 +329,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.titulaire']);
@@ -349,7 +349,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.nci']);
@@ -372,7 +372,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.email']);
@@ -395,7 +395,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.telephone']);
@@ -415,7 +415,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.telephone']);
@@ -435,7 +435,7 @@ class CompteApiTest extends TestCase
             ]
         ];
 
-        $response = $this->postJson('/api/v1/comptes', $data);
+        $response = $this->postJson('/ndiaye/v1/comptes', $data);
 
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['client.adresse']);
