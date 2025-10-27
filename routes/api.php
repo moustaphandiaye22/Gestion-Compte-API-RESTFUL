@@ -32,5 +32,9 @@ Route::prefix('v1')->group(function () {
 
     // Route spécifique pour les comptes archivés (cloud pour épargne)
     Route::get('comptes-archives', [CompteController::class, 'archives'])
-           ->name('comptes.archives');
+            ->name('comptes.archives');
+
+    // Route pour bloquer un compte
+    Route::post('comptes/{compteId}/bloquer', [CompteController::class, 'bloquer'])
+            ->name('comptes.bloquer');
 });

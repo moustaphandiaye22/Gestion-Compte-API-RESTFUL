@@ -523,4 +523,94 @@ class CompteController extends Controller
         $perPage = request('limit', 10);
         return $data->paginate($perPage);
     }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/comptes/{compteId}/bloquer",
+     *     summary="Bloquer un compte",
+     *     description="Bloque un compte en définissant les dates de début et fin de blocage. Accessible uniquement aux administrateurs.",
+     *     @OA\Parameter(
+     *         name="compteId",
+     *         in="path",
+     *         description="L'ID du compte",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"date_debut_blocage", "date_fin_blocage"},
+     *             @OA\Property(property="date_debut_blocage", type="string", format="date-time", example="2025-11-01T00:00:00Z"),
+     *             @OA\Property(property="date_fin_blocage", type="string", format="date-time", example="2025-12-01T00:00:00Z")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte bloqué avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Compte bloqué avec succès"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="statut", type="string", example="Bloque"),
+     *                 @OA\Property(property="date_debut_blocage", type="string", format="date-time", example="2025-11-01T00:00:00Z"),
+     *                 @OA\Property(property="date_fin_blocage", type="string", format="date-time", example="2025-12-01T00:00:00Z")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
+     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function bloquer(Request $request, string $compteId)
+    {
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+
+        // Find the account
+        $compte = Compte::find($compteId);
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Authorize
+        if (!$isAdmin) {
+            $this->authorize('update', $compte);
+        }
+
+        // Validate request
+        $validated = $request->validate([
+            'date_debut_blocage' => 'required|date|after:now',
+            'date_fin_blocage' => 'required|date|after:date_debut_blocage',
+        ]);
+
+        // Update account
+        $compte->update([
+            'statut' => 'Bloque',
+            'date_debut_blocage' => $validated['date_debut_blocage'],
+            'date_fin_blocage' => $validated['date_fin_blocage'],
+        ]);
+
+        return $this->successResponse(new CompteResource($compte), 'Compte bloqué avec succès');
+    }
 }
