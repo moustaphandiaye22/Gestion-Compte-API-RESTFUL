@@ -17,7 +17,7 @@ return [
     'routes' => [
         'api' => '/docs',
         'docs' => '/docs-json',
-        'oauth2_callback' => '/api/oauth2-callback',
+        'oauth2_callback' => '/ndiaye/oauth2-callback',
         'assets' => '/swagger-ui-assets',
         'middleware' => [
             'api' => [],

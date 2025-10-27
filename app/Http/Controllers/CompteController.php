@@ -44,7 +44,7 @@ class CompteController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/comptes",
+     *     path="/ndiaye/v1/comptes",
      *     summary="Lister tous les comptes",
      *     description="Liste tous les comptes avec filtrage, tri et pagination. Admin peut voir tous les comptes, Client ne voit que ses comptes. Seuls les comptes non supprimés, de type cheque ou epargne, et actifs sont retournés.",
      *     @OA\Parameter(
@@ -125,10 +125,10 @@ class CompteController extends Controller
      *                 @OA\Property(property="hasPrevious", type="boolean", example=false)
      *             ),
      *             @OA\Property(property="links", type="object",
-     *                 @OA\Property(property="self", type="string", example="/api/v1/comptes?page=1&limit=10"),
-     *                 @OA\Property(property="next", type="string", example="/api/v1/comptes?page=2&limit=10"),
-     *                 @OA\Property(property="first", type="string", example="/api/v1/comptes?page=1&limit=10"),
-     *                 @OA\Property(property="last", type="string", example="/api/v1/comptes?page=3&limit=10")
+     *                 @OA\Property(property="self", type="string", example="/ndiaye/v1/comptes?page=1&limit=10"),
+     *                 @OA\Property(property="next", type="string", example="/ndiaye/v1/comptes?page=2&limit=10"),
+     *                 @OA\Property(property="first", type="string", example="/ndiaye/v1/comptes?page=1&limit=10"),
+     *                 @OA\Property(property="last", type="string", example="/ndiaye/v1/comptes?page=3&limit=10")
      *             )
      *         )
      *     )
@@ -148,7 +148,7 @@ class CompteController extends Controller
 
     /**
       * @OA\Post(
-      *     path="/api/v1/comptes",
+      *     path="/ndiaye/v1/comptes",
       *     summary="Créer un nouveau compte",
       *     description="Crée un nouveau compte bancaire. Vérifie l'existence du client, le crée si nécessaire, génère un mot de passe et un code, crée le compte, effectue un dépôt initial, et envoie des notifications par email et SMS.",
       *     @OA\RequestBody(
@@ -312,7 +312,7 @@ class CompteController extends Controller
 
     /**
        * @OA\Get(
-       *     path="/api/v1/comptes/{id}",
+       *     path="/ndiaye/v1/comptes/{id}",
        *     summary="Afficher un compte spécifique",
        *     description="Récupère un compte spécifique par ID. Pour le moment, sans authentification, traiter comme admin. Recherche d'abord en local pour les comptes actifs (cheque/epargne), puis en serverless si non trouvé.",
        *     @OA\Parameter(
@@ -386,7 +386,7 @@ class CompteController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/comptes/{id}",
+     *     path="/ndiaye/v1/comptes/{id}",
      *     summary="Supprimer un compte",
      *     description="Supprime un compte de manière soft (met à jour le statut à 'Ferme' et définit la date de fermeture). Accessible uniquement aux administrateurs.",
      *     @OA\Parameter(
@@ -463,7 +463,7 @@ class CompteController extends Controller
 
     /**
       * @OA\Get(
-      *     path="/api/v1/comptes-archives",
+      *     path="/ndiaye/v1/comptes-archives",
       *     summary="Récupérer les comptes archivés",
       *     description="Liste tous les comptes archivés (statut 'Supprime') avec pagination. Accessible uniquement aux administrateurs.",
       *     @OA\Parameter(
@@ -526,7 +526,7 @@ class CompteController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/v1/comptes/{compteId}/bloquer",
+     *     path="/ndiaye/v1/comptes/{compteId}/bloquer",
      *     summary="Bloquer un compte",
      *     description="Bloque un compte en définissant les dates de début et fin de blocage. Accessible uniquement aux administrateurs.",
      *     @OA\Parameter(
