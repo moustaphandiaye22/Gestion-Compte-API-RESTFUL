@@ -17,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
          $this->app->bind(ResponseFactoryContract::class, ResponseFactory::class);
-         $this->app->bind(SmsServiceInterface::class, TwilioSmsService::class);
+         $this->app->bind(SmsServiceInterface::class, MockSmsService::class);
     }
 
     /**
