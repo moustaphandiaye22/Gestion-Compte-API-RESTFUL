@@ -28,15 +28,18 @@ trait ApiResponseTrait
     /**
      * Format de réponse API standard pour erreur
      */
-    protected function errorResponse($message = 'Une erreur est survenue', $statusCode = 400, $errors = null)
+    protected function errorResponse($message = 'Une erreur est survenue', $statusCode = 400, $code = 'VALIDATION_ERROR', $errors = null)
     {
         $response = [
             'success' => false,
-            'message' => $message,
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+            ],
         ];
 
         if ($errors !== null) {
-            $response['errors'] = $errors;
+            $response['error']['details'] = $errors;
         }
 
         return response()->json($response, $statusCode);

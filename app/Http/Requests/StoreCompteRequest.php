@@ -28,8 +28,8 @@ class StoreCompteRequest extends FormRequest
             'client.id' => 'nullable|uuid',
             'client.titulaire' => 'required|string|max:255',
             'client.nci' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci()],
-            'client.email' => 'required|email',
-            'client.telephone' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci()],
+            'client.email' => 'required|email|unique:clients,email',
+            'client.telephone' => ['required', 'string', new \App\Rules\SenegalesePhoneAndNci(), 'unique:clients,telephone'],
             'client.adresse' => 'required|string|max:255',
         ];
     }

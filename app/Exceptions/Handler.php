@@ -46,13 +46,24 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $e)
     {
         if ($request->expectsJson()) {
+            $statusCode = 500; // Default to 500 for server errors
+
+            // Handle specific exception types
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                $statusCode = 422;
+            } elseif ($e instanceof \Illuminate\Auth\Access\AuthorizationException) {
+                $statusCode = 403;
+            } elseif ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                $statusCode = 404;
+            }
+
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => get_class($e),
                     'message' => $e->getMessage(),
                 ]
-            ], 403);
+            ], $statusCode);
         }
 
         return parent::render($request, $e);
