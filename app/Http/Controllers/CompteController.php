@@ -18,6 +18,7 @@ use App\Traits\ApiResponseTrait;
 use App\Exceptions\CompteNotFoundException;
 use App\Exceptions\UnauthorizedAccessException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -217,24 +218,26 @@ class CompteController extends Controller
     {
         $data = $request->validated();
 
-        // Find or create client
-         [$client, $password] = $this->findOrCreateClient($data['client']);
+        return DB::transaction(function () use ($data) {
+            // Find or create client
+            [$client, $password] = $this->findOrCreateClient($data['client']);
 
-         // Create account
-         $compte = $this->createCompte($data, $client);
+            // Create account
+            $compte = $this->createCompte($data, $client);
 
-         // Create initial deposit transaction
-         $this->createInitialDeposit($compte, $data['soldeInitial']);
+            // Create initial deposit transaction
+            $this->createInitialDeposit($compte, $data['soldeInitial']);
 
-         // Dispatch event for notifications
-         if ($password) {
-             event(new \App\Events\ClientCreated($client, $password));
-         }
+            // Dispatch event for notifications
+            if ($password) {
+                event(new \App\Events\ClientCreated($client, $password));
+            }
 
         // Load client relationship for the response
         $compte->load('client');
 
         return $this->successResponse(new CompteResource($compte), 'Compte créé avec succès', 201);
+        });
     }
 
     private function findOrCreateClient(array $clientData): array
