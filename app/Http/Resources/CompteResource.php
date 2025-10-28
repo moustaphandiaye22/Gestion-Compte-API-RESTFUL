@@ -23,9 +23,10 @@ class CompteResource extends JsonResource
              'devise' => $this->devise,
              'dateCreation' => $this->dateCreation?->toISOString(),
              'statut' => $this->statut,
+             'motifBlocage' => $this->motifBlocage,
+             'dateBlocage' => $this->date_debut_blocage?->toISOString(),
+             'dateDeblocagePrevue' => $this->date_fin_blocage?->toISOString(),
              'dateFermeture' => $this->dateFermeture?->toISOString(),
-             'date_debut_blocage' => $this->date_debut_blocage?->toISOString(),
-             'date_fin_blocage' => $this->date_fin_blocage?->toISOString(),
              'metadata' => [
                  'derniereModification' => $this->updated_at?->toISOString(),
                  'version' => 1,

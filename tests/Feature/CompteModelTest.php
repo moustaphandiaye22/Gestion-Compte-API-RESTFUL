@@ -84,3 +84,71 @@ test('compte has correct casts', function () {
     expect($casts['dateCreation'])->toBe('date');
     expect($casts['metadata'])->toBe('array');
 });
+
+test('compte isBlocked returns false for active account', function () {
+    $compte = Compte::factory()->create(['statut' => 'Actif']);
+
+    expect($compte->isBlocked())->toBeFalse();
+});
+
+test('compte isBlocked returns true for blocked account without dates', function () {
+    $compte = Compte::factory()->create(['statut' => 'Bloque']);
+
+    expect($compte->isBlocked())->toBeTrue();
+});
+
+test('compte isBlocked returns true for blocked account within blocking period', function () {
+    $compte = Compte::factory()->create([
+        'statut' => 'Bloque',
+        'date_debut_blocage' => now()->subDays(1),
+        'date_fin_blocage' => now()->addDays(1),
+    ]);
+
+    expect($compte->isBlocked())->toBeTrue();
+});
+
+test('compte isBlocked returns false for blocked account after blocking period', function () {
+    $compte = Compte::factory()->create([
+        'statut' => 'Bloque',
+        'date_debut_blocage' => now()->subDays(2),
+        'date_fin_blocage' => now()->subDays(1),
+    ]);
+
+    expect($compte->isBlocked())->toBeFalse();
+});
+
+test('compte isBlocked returns true for blocked account with only start date in past', function () {
+    $compte = Compte::factory()->create([
+        'statut' => 'Bloque',
+        'date_debut_blocage' => now()->subDays(1),
+    ]);
+
+    expect($compte->isBlocked())->toBeTrue();
+});
+
+test('compte isBlocked returns false for blocked account with only start date in future', function () {
+    $compte = Compte::factory()->create([
+        'statut' => 'Bloque',
+        'date_debut_blocage' => now()->addDays(1),
+    ]);
+
+    expect($compte->isBlocked())->toBeFalse();
+});
+
+test('compte isBlocked returns true for blocked account with only end date in future', function () {
+    $compte = Compte::factory()->create([
+        'statut' => 'Bloque',
+        'date_fin_blocage' => now()->addDays(1),
+    ]);
+
+    expect($compte->isBlocked())->toBeTrue();
+});
+
+test('compte isBlocked returns false for blocked account with only end date in past', function () {
+    $compte = Compte::factory()->create([
+        'statut' => 'Bloque',
+        'date_fin_blocage' => now()->subDays(1),
+    ]);
+
+    expect($compte->isBlocked())->toBeFalse();
+});

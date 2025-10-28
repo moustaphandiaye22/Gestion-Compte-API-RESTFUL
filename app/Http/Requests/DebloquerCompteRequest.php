@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class BloquerCompteRequest extends FormRequest
+class DebloquerCompteRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,8 +23,6 @@ class BloquerCompteRequest extends FormRequest
     {
         return [
             'motif' => 'required|string|max:255',
-            'duree' => 'required|integer|min:1',
-            'unite' => 'required|string|in:jour,jours,semaine,semaines,mois,annee,annees',
         ];
     }
 
@@ -36,15 +34,9 @@ class BloquerCompteRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'motif.required' => 'Le motif de blocage est obligatoire.',
+            'motif.required' => 'Le motif de déblocage est obligatoire.',
             'motif.string' => 'Le motif doit être une chaîne de caractères.',
             'motif.max' => 'Le motif ne doit pas dépasser 255 caractères.',
-            'duree.required' => 'La durée de blocage est obligatoire.',
-            'duree.integer' => 'La durée doit être un nombre entier.',
-            'duree.min' => 'La durée doit être d\'au moins 1.',
-            'unite.required' => 'L\'unité de durée est obligatoire.',
-            'unite.string' => 'L\'unité doit être une chaîne de caractères.',
-            'unite.in' => 'L\'unité doit être l\'une des valeurs suivantes : jour, jours, semaine, semaines, mois, annee, annees.',
         ];
     }
 }
