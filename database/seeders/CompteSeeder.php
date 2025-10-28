@@ -13,7 +13,16 @@ class CompteSeeder extends Seeder
     public function run(): void
     {
         \App\Models\Compte::factory(20)->create()->each(function ($compte) {
-            \App\Models\Transaction::factory(rand(1, 10))->create([
+            // Ensure initial deposit >= 10000
+            \App\Models\Transaction::factory()->create([
+                'compte_id' => $compte->id,
+                'type' => 'Depot',
+                'montant' => fake()->randomFloat(2, 10000, 50000),
+                'statut' => 'Validee',
+            ]);
+
+            // Additional random transactions
+            \App\Models\Transaction::factory(rand(0, 9))->create([
                 'compte_id' => $compte->id,
             ]);
         });

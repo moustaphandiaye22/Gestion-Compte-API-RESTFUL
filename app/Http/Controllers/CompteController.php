@@ -466,8 +466,8 @@ class CompteController extends Controller
     /**
       * @OA\Get(
       *     path="/ndiaye/v1/comptes-archives",
-      *     summary="Récupérer les comptes archivés",
-      *     description="Liste tous les comptes archivés (statut 'Supprime') avec pagination. Accessible uniquement aux administrateurs.",
+      *     summary="[CONSULTATION] Récupérer les comptes archivés",
+      *     description="Liste tous les comptes archivés (statut 'Supprime') avec pagination. Accessible uniquement aux administrateurs. Cette endpoint permet de consulter les comptes qui ont été archivés automatiquement ou manuellement.",
       *     @OA\Parameter(
       *         name="page",
       *         in="query",
@@ -622,5 +622,79 @@ class CompteController extends Controller
         ]);
 
         return $this->successResponse(new CompteResource($compte), 'Compte bloqué avec succès');
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/ndiaye/v1/comptes/{compte}/archiver",
+     *     summary="[ACTION] Archiver manuellement un compte",
+     *     description="Archive manuellement un compte en définissant son statut à 'Supprime' et archive toutes ses transactions. Accessible uniquement aux administrateurs. Cette action est différente de l'archivage automatique qui se fait via les jobs programmés pour les comptes bloqués expirés.",
+     *     @OA\Parameter(
+     *         name="compte",
+     *         in="path",
+     *         description="L'ID du compte à archiver",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte archivé avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Compte archivé avec succès"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="statut", type="string", example="Supprime")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
+     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function archiver(string $compte)
+    {
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+
+        // Find the account
+        $compte = Compte::find($compte);
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Authorize
+        if (!$isAdmin) {
+            $this->authorize('delete', $compte);
+        }
+
+        // Archive the account
+        $compte->update(['statut' => 'Supprime']);
+
+        // Archive all transactions for this account
+        Transaction::where('compte_id', $compte->id)
+            ->update(['statut' => 'Archivee']);
+
+        return $this->successResponse(new CompteResource($compte), 'Compte archivé avec succès');
     }
 }

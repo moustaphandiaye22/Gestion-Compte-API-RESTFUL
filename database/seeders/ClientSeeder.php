@@ -14,7 +14,7 @@ class ClientSeeder extends Seeder
     {
         \App\Models\Client::factory(10)->create()->each(function ($client) {
             $user = \App\Models\User::factory()->create([
-                'email' => fake()->unique()->safeEmail,
+                'email' => $client->email, // Use client's email
                 'password' => bcrypt('password'),
                 'userable_id' => $client->id,
                 'userable_type' => \App\Models\Client::class,

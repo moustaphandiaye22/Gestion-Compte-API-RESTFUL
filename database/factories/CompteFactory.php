@@ -16,15 +16,17 @@ class CompteFactory extends Factory
      */
     public function definition(): array
     {
+        $client = \App\Models\Client::factory()->create();
+
         return [
             'numeroCompte' => null, // Let the model boot method generate it
-            'titulaire' => $this->faker->name,
+            'titulaire' => $client->titulaire, // Use client's titulaire
             'type' => $this->faker->randomElement(['Epargne', 'Cheque']),
             'devise' => 'FCFA',
             'dateCreation' => now()->toDateString(),
             'statut' => $this->faker->randomElement(['Actif', 'Bloque', 'Ferme']),
             'metadata' => json_encode(['notes' => $this->faker->sentence]),
-            'client_id' => \App\Models\Client::factory(),
+            'client_id' => $client->id,
         ];
     }
 }
