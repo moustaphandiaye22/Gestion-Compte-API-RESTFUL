@@ -38,6 +38,10 @@ Route::prefix('v1')->group(function () {
     Route::post('comptes/{compteId}/bloquer', [CompteController::class, 'bloquer'])
             ->name('comptes.bloquer');
 
+    // Route pour débloquer un compte
+    Route::post('comptes/{compteId}/debloquer', [CompteController::class, 'debloquer'])
+            ->name('comptes.debloquer');
+
     // Route pour archiver un compte
     Route::post('comptes/{compte}/archiver', [CompteController::class, 'archiver'])
             ->name('comptes.archiver');

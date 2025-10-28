@@ -28,7 +28,7 @@ class UnarchiveExpiredBlockedAccounts implements ShouldQueue
     public function handle(): void
     {
         // Find accounts where blocking end date has expired
-        $expiredAccounts = Compte::where('statut', 'Bloque')
+        $expiredAccounts = Compte::where('statut', 'bloque')
             ->where('date_fin_blocage', '<=', now())
             ->get();
 

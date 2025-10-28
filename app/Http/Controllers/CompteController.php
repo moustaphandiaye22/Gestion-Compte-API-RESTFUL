@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\BloquerCompteRequest;
+use App\Http\Requests\DebloquerCompteRequest;
 use App\Http\Requests\ListComptesRequest;
 use App\Http\Requests\StoreCompteRequest;
 use App\Http\Requests\UpdateCompteRequest;
@@ -543,8 +544,8 @@ class CompteController extends Controller
     /**
      * @OA\Post(
      *     path="/ndiaye/v1/comptes/{compteId}/bloquer",
-     *     summary="Bloquer un compte",
-     *     description="Bloque un compte en définissant les dates de début et fin de blocage. Accessible uniquement aux administrateurs.",
+     *     summary="Bloquer un compte Epargne",
+     *     description="Bloque un compte Epargne actif en définissant le motif, la durée et l'unité de blocage. Calcule automatiquement les dates de début et fin de blocage. Accessible uniquement aux administrateurs.",
      *     @OA\Parameter(
      *         name="compteId",
      *         in="path",
@@ -555,9 +556,10 @@ class CompteController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"date_debut_blocage", "date_fin_blocage"},
-     *             @OA\Property(property="date_debut_blocage", type="string", format="date-time", example="2025-11-01T00:00:00Z"),
-     *             @OA\Property(property="date_fin_blocage", type="string", format="date-time", example="2025-12-01T00:00:00Z")
+     *             required={"motif", "duree", "unite"},
+     *             @OA\Property(property="motif", type="string", example="Activité suspecte détectée"),
+     *             @OA\Property(property="duree", type="integer", example=30),
+     *             @OA\Property(property="unite", type="string", enum={"jour", "jours", "semaine", "semaines", "mois", "annee", "annees"}, example="mois")
      *         )
      *     ),
      *     @OA\Response(
@@ -568,9 +570,21 @@ class CompteController extends Controller
      *             @OA\Property(property="message", type="string", example="Compte bloqué avec succès"),
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
-     *                 @OA\Property(property="statut", type="string", example="Bloque"),
-     *                 @OA\Property(property="date_debut_blocage", type="string", format="date-time", example="2025-11-01T00:00:00Z"),
-     *                 @OA\Property(property="date_fin_blocage", type="string", format="date-time", example="2025-12-01T00:00:00Z")
+     *                 @OA\Property(property="statut", type="string", example="bloque"),
+     *                 @OA\Property(property="motifBlocage", type="string", example="Activité suspecte détectée"),
+     *                 @OA\Property(property="dateBlocage", type="string", format="date-time", example="2025-10-19T11:20:00Z"),
+     *                 @OA\Property(property="dateDeblocagePrevue", type="string", format="date-time", example="2025-11-18T11:20:00Z")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Erreur de validation ou compte non éligible",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="VALIDATION_ERROR"),
+     *                 @OA\Property(property="message", type="string", example="Le compte n'est pas éligible au blocage")
      *             )
      *         )
      *     ),
@@ -609,6 +623,138 @@ class CompteController extends Controller
             throw new CompteNotFoundException();
         }
 
+        // Validate account eligibility: must be Epargne and Actif
+        if ($compte->type !== 'Epargne' || $compte->statut !== 'Actif') {
+            return $this->errorResponse('Le compte n\'est pas éligible au blocage. Seuls les comptes Epargne actifs peuvent être bloqués.', 'VALIDATION_ERROR', 400);
+        }
+
+        // Authorize
+        if (!$isAdmin) {
+            $this->authorize('update', $compte);
+        }
+
+        // Get validated data
+        $validated = $request->validated();
+
+        // Calculate blocking dates
+        $dateBlocage = now();
+        $dateDeblocagePrevue = $this->calculateDeblocageDate($dateBlocage, $validated['duree'], $validated['unite']);
+
+        // Update account
+        $compte->update([
+            'statut' => 'bloque',
+            'motifBlocage' => $validated['motif'],
+            'date_debut_blocage' => $dateBlocage,
+            'date_fin_blocage' => $dateDeblocagePrevue,
+        ]);
+
+        return $this->successResponse(new CompteResource($compte), 'Compte bloqué avec succès');
+    }
+
+    private function calculateDeblocageDate($startDate, $duree, $unite)
+    {
+        $date = clone $startDate;
+
+        switch ($unite) {
+            case 'jour':
+            case 'jours':
+                return $date->addDays($duree);
+            case 'semaine':
+            case 'semaines':
+                return $date->addWeeks($duree);
+            case 'mois':
+                return $date->addMonths($duree);
+            case 'annee':
+            case 'annees':
+                return $date->addYears($duree);
+            default:
+                throw new \InvalidArgumentException('Unité de durée invalide');
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/ndiaye/v1/comptes/{compteId}/debloquer",
+     *     summary="Débloquer un compte Epargne",
+     *     description="Débloque un compte Epargne bloqué en définissant le motif de déblocage. Accessible uniquement aux administrateurs.",
+     *     @OA\Parameter(
+     *         name="compteId",
+     *         in="path",
+     *         description="L'ID du compte",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"motif"},
+     *             @OA\Property(property="motif", type="string", example="Vérification complétée")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte débloqué avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Compte débloqué avec succès"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="statut", type="string", example="actif"),
+     *                 @OA\Property(property="dateDeblocage", type="string", format="date-time", example="2025-10-19T12:00:00Z")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Erreur de validation ou compte non éligible",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="VALIDATION_ERROR"),
+     *                 @OA\Property(property="message", type="string", example="Le compte n'est pas éligible au déblocage")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
+     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function debloquer(DebloquerCompteRequest $request, string $compteId)
+    {
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+
+        // Find the account
+        $compte = Compte::find($compteId);
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Validate account eligibility: must be Epargne and bloque
+        if ($compte->type !== 'Epargne' || $compte->statut !== 'bloque') {
+            return $this->errorResponse('Le compte n\'est pas éligible au déblocage. Seuls les comptes Epargne bloqués peuvent être débloqués.', 'VALIDATION_ERROR', 400);
+        }
+
         // Authorize
         if (!$isAdmin) {
             $this->authorize('update', $compte);
@@ -619,12 +765,13 @@ class CompteController extends Controller
 
         // Update account
         $compte->update([
-            'statut' => 'Bloque',
-            'date_debut_blocage' => $validated['date_debut_blocage'],
-            'date_fin_blocage' => $validated['date_fin_blocage'],
+            'statut' => 'actif',
+            'motifBlocage' => null, // Clear blocking motif
+            'date_debut_blocage' => null,
+            'date_fin_blocage' => null,
         ]);
 
-        return $this->successResponse(new CompteResource($compte), 'Compte bloqué avec succès');
+        return $this->successResponse(new CompteResource($compte), 'Compte débloqué avec succès');
     }
 
     /**

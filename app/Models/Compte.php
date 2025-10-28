@@ -25,6 +25,7 @@ class Compte extends Model
            'dateFermeture',
            'date_debut_blocage',
            'date_fin_blocage',
+           'motifBlocage',
        ];
 
     protected $casts = [
@@ -89,5 +90,38 @@ class Compte extends Model
         return $query->whereHas('client', function ($q) use ($telephone) {
             $q->where('telephone', $telephone);
         });
+    }
+
+    /**
+     * Vérifie si le compte est actuellement bloqué.
+     * Un compte est considéré bloqué si son statut est 'Bloque' et que la date actuelle
+     * est comprise entre date_debut_blocage et date_fin_blocage (si ces dates sont définies).
+     * Si les dates ne sont pas définies, le blocage est considéré permanent.
+     */
+    public function isBlocked()
+    {
+        if ($this->statut !== 'Bloque') {
+            return false;
+        }
+
+        $now = now();
+
+        // Si les dates de blocage sont définies, vérifier si on est dans la période
+        if ($this->date_debut_blocage && $this->date_fin_blocage) {
+            return $now->between($this->date_debut_blocage, $this->date_fin_blocage);
+        }
+
+        // Si seulement la date de début est définie, bloqué à partir de cette date
+        if ($this->date_debut_blocage) {
+            return $now->gte($this->date_debut_blocage);
+        }
+
+        // Si seulement la date de fin est définie, bloqué jusqu'à cette date
+        if ($this->date_fin_blocage) {
+            return $now->lte($this->date_fin_blocage);
+        }
+
+        // Si aucune date n'est définie, le blocage est permanent
+        return true;
     }
 }

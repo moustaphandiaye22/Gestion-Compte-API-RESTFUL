@@ -18,7 +18,7 @@ class TransactionFactory extends Factory
     {
         return [
             'numeroCompte' => $this->faker->numerify('############'),
-            'type' => $this->faker->randomElement(['Depot', 'Retrait', 'Transfert']),
+            'type' => $this->faker->randomElement(['Depot', 'Retrait', 'Virement']),
             'montant' => $this->faker->randomFloat(2, 1000, 100000),
             'dateTransaction' => now(),
             'description' => $this->faker->sentence,
