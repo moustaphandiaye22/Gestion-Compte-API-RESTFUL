@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BloquerCompteRequest;
 use App\Http\Requests\ListComptesRequest;
 use App\Http\Requests\StoreCompteRequest;
 use App\Http\Requests\UpdateCompteRequest;
@@ -582,7 +583,7 @@ class CompteController extends Controller
      *     )
      * )
      */
-    public function bloquer(Request $request, string $compteId)
+    public function bloquer(BloquerCompteRequest $request, string $compteId)
     {
         // Pour le moment, sans authentification, traiter comme admin
         $isAdmin = true;
@@ -598,11 +599,8 @@ class CompteController extends Controller
             $this->authorize('update', $compte);
         }
 
-        // Validate request
-        $validated = $request->validate([
-            'date_debut_blocage' => 'required|date|after:now',
-            'date_fin_blocage' => 'required|date|after:date_debut_blocage',
-        ]);
+        // Get validated data
+        $validated = $request->validated();
 
         // Update account
         $compte->update([
