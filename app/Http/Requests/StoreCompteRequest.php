@@ -53,8 +53,8 @@ class StoreCompteRequest extends FormRequest
             'client.telephone.required' => 'Le téléphone est obligatoire.',
             'client.telephone.unique' => 'Ce numéro de téléphone est déjà utilisé.',
             'client.adresse.required' => 'L\'adresse est obligatoire.',
-            'client.telephone.*' => 'Le numéro de téléphone doit être un numéro de téléphone portable sénégalais valide avec un opérateur reconnu (Orange: 77-78, Free: 70-76, Expresso: 79). Ex: +221771234567.',
-            'client.nci.*' => 'Le numéro CNI doit être composé de 13 chiffres commençant par l\'année de naissance (19 ou 20).',
+            'client.telephone.*' => 'Le numéro de téléphone doit être un numéro valide au Sénégal (ex : +221771234567, 00221771234567, ou 771234567). Préfixes autorisés : 30, 33, 70, 72, 75, 76, 77, 78.',
+            'client.nci.*' => 'Le numéro CNI doit être composé de 13 chiffres.',
         ];
     }
 }

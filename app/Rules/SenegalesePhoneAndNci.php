@@ -15,22 +15,14 @@ class SenegalesePhoneAndNci implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if ($attribute === 'client.telephone') {
-            // Senegalese phone: +221 followed by operator codes and 7 digits, or 221 followed by 6 digits
-            // Operators: Orange (77, 78), Free (70, 71, 72, 73, 74, 75, 76), Expresso (79)
-            if (str_starts_with($value, '+221')) {
-                if (!preg_match('/^\+221(7[0-9]|77|78)[0-9]{7}$/', $value)) {
-                    $fail('Le numéro de téléphone doit être un numéro de téléphone portable sénégalais valide avec un opérateur reconnu (Orange: 77-78, Free: 70-76, Expresso: 79). Ex: +221771234567.');
-                }
-            } elseif (str_starts_with($value, '221')) {
-                if (!preg_match('/^221(7[0-9]|77|78)[0-9]{6}$/', $value)) {
-                    $fail('Le numéro de téléphone doit être un numéro de téléphone portable sénégalais valide avec un opérateur reconnu (Orange: 77-78, Free: 70-76, Expresso: 79). Ex: 221771234567.');
-                }
-            } else {
-                $fail('Le numéro de téléphone doit être un numéro de téléphone portable sénégalais valide avec un opérateur reconnu (Orange: 77-78, Free: 70-76, Expresso: 79). Ex: +221771234567.');
+            // Senegalese phone: +221, 00221, or local format with valid operator codes
+            // Operators: 30, 33, 70, 72, 75, 76, 77, 78
+            if (!preg_match('/^(?:\+221|00221)?(?:30|33|70|72|75|76|77|78)\d{7}$/', $value)) {
+                $fail('Le numéro de téléphone doit être un numéro valide au Sénégal (ex : +221771234567, 00221771234567, ou 771234567). Préfixes autorisés : 30, 33, 70, 72, 75, 76, 77, 78.');
             }
         } elseif ($attribute === 'client.nci') {
-            // Senegalese CNI: 13 digits
-            if (!preg_match('/^[0-9]{13}$/', $value)) {
+            // Senegalese CNI: exactly 13 digits
+            if (!preg_match('/^\d{13}$/', $value)) {
                 $fail('Le numéro CNI doit être composé de 13 chiffres.');
             }
         }

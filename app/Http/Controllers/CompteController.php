@@ -19,6 +19,7 @@ use App\Exceptions\UnauthorizedAccessException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * @OA\Info(
@@ -507,7 +508,7 @@ class CompteController extends Controller
             $comptes = Compte::withoutGlobalScope('nonSupprime')
                  ->with('client')
                  ->where('statut', 'Supprime')
-                 ->where('type', 'Epargne')
+                 ->where('type', 'Cheque')
                  ->paginate(request('limit', 10));
         }
 
@@ -525,7 +526,18 @@ class CompteController extends Controller
     private function paginateCloudData($data)
     {
         $perPage = request('limit', 10);
-        return $data->paginate($perPage);
+        $currentPage = request('page', 1);
+        $total = $data->count();
+        $offset = ($currentPage - 1) * $perPage;
+        $items = $data->slice($offset, $perPage);
+
+        return new LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'pageName' => 'page']
+        );
     }
 
     /**
