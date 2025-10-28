@@ -11,7 +11,6 @@ test('compte has correct fillable attributes', function () {
     $compte = new Compte();
 
     expect($compte->getFillable())->toBe([
-        'id',
         'numeroCompte',
         'titulaire',
         'type',
@@ -20,6 +19,10 @@ test('compte has correct fillable attributes', function () {
         'statut',
         'metadata',
         'client_id',
+        'dateFermeture',
+        'date_debut_blocage',
+        'date_fin_blocage',
+        'motifBlocage',
     ]);
 });
 

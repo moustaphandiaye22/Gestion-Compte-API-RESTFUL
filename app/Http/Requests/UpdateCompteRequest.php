@@ -21,12 +21,13 @@ class UpdateCompteRequest extends FormRequest
      */
     public function rules(): array
     {
-        $compteId = $this->route('compte') ? $this->route('compte')->id : null;
+        $compteId = $this->route('id') ? $this->route('id') : null;
 
         return [
             'numeroCompte' => 'nullable|string|unique:comptes,numeroCompte,' . $compteId,
             'titulaire' => 'sometimes|required|string|max:255',
             'type' => 'sometimes|required|in:Epargne,Cheque',
+            'solde' => 'nullable|numeric|min:0',
             'devise' => 'nullable|string|max:10',
             'dateCreation' => 'nullable|date',
             'statut' => 'nullable|in:Actif,Bloque,Ferme',

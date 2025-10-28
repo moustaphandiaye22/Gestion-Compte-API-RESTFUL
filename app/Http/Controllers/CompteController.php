@@ -146,6 +146,9 @@ class CompteController extends Controller
         // Récupération des comptes avec le service
         $comptes = $this->compteService->getComptesWithFilters($request, $clientId);
 
+        // Load client relationship for the response
+        $comptes->load('client');
+
         return new CompteCollection($comptes);
     }
 
@@ -154,24 +157,24 @@ class CompteController extends Controller
       *     path="/ndiaye/v1/comptes",
       *     summary="Créer un nouveau compte",
       *     description="Crée un nouveau compte bancaire. Vérifie l'existence du client, le crée si nécessaire, génère un mot de passe et un code, crée le compte, effectue un dépôt initial, et envoie des notifications par email et SMS.",
-      *     @OA\RequestBody(
-      *         required=true,
-      *         @OA\JsonContent(
-      *             required={"type", "soldeInitial", "client"},
-      *             @OA\Property(property="type", type="string", enum={"Cheque", "Epargne"}, example="Cheque"),
-      *             @OA\Property(property="soldeInitial", type="number", minimum=10000, example=500000),
-      *             @OA\Property(property="devise", type="string", example="FCFA"),
-      *             @OA\Property(property="client", type="object",
-      *                 required={"titulaire", "nci", "email", "telephone", "adresse"},
-      *                 @OA\Property(property="id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
-      *                 @OA\Property(property="titulaire", type="string", example="Hawa BB Wane"),
-      *                 @OA\Property(property="nci", type="string", example="1234567890123"),
-      *                 @OA\Property(property="email", type="string", format="email", example="cheikh.sy@example.com"),
-      *                 @OA\Property(property="telephone", type="string", example="+221771234567"),
-      *                 @OA\Property(property="adresse", type="string", example="Dakar, Sénégal")
-      *             )
-      *         )
-      *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"type", "soldeInitial", "client"},
+     *             @OA\Property(property="type", type="string", enum={"Cheque", "Epargne"}, example="Cheque"),
+     *             @OA\Property(property="soldeInitial", type="number", minimum=10000, example=500000),
+     *             @OA\Property(property="devise", type="string", example="FCFA"),
+     *             @OA\Property(property="client", type="object",
+     *                 required={"titulaire", "nci", "email", "telephone", "adresse"},
+     *                 @OA\Property(property="id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="titulaire", type="string", example="Hawa BB Wane"),
+     *             @OA\Property(property="nci", type="string", example="1987654321098"),
+     *                 @OA\Property(property="email", type="string", format="email", example="cheikh.sy@example.com"),
+     *                 @OA\Property(property="telephone", type="string", example="+221771234567"),
+     *                 @OA\Property(property="adresse", type="string", example="Dakar, Sénégal")
+     *             )
+     *         )
+     *     ),
       *     @OA\Response(
       *         response=201,
       *         description="Compte créé avec succès",
@@ -227,6 +230,9 @@ class CompteController extends Controller
          if ($password) {
              event(new \App\Events\ClientCreated($client, $password));
          }
+
+        // Load client relationship for the response
+        $compte->load('client');
 
         return $this->successResponse(new CompteResource($compte), 'Compte créé avec succès', 201);
     }
@@ -376,15 +382,39 @@ class CompteController extends Controller
             throw new CompteNotFoundException();
         }
 
+        // Load client relationship for the response
+        $compte->load('client');
+
         return $this->successResponse(new CompteResource($compte));
     }
 
-    /**
-     * Mettre à jour un compte
-     */
+
     public function update(UpdateCompteRequest $request, string $id)
     {
-       
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+
+        // Find the account
+        $compte = Compte::find($id);
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Authorize
+        if (!$isAdmin) {
+            $this->authorize('update', $compte);
+        }
+
+        // Get validated data
+        $validated = $request->validated();
+
+        // Update account
+        $compte->update($validated);
+
+        // Load client relationship for the response
+        $compte->load('client');
+
+        return $this->successResponse(new CompteResource($compte), 'Compte mis à jour avec succès');
     }
 
     /**
@@ -460,6 +490,9 @@ class CompteController extends Controller
             'statut' => 'Ferme',
             'dateFermeture' => now(),
         ]);
+
+        // Load client relationship for the response
+        $compte->load('client');
 
         return $this->successResponse(new CompteResource($compte), 'Compte supprimé avec succès');
     }
@@ -556,7 +589,7 @@ class CompteController extends Controller
      *             required={"motif", "duree", "unite"},
      *             @OA\Property(property="motif", type="string", example="Activité suspecte détectée"),
      *             @OA\Property(property="duree", type="integer", example=30),
-     *             @OA\Property(property="unite", type="string", enum={"jour", "jours", "semaine", "semaines", "mois", "annee", "annees"}, example="mois")
+     *             @OA\Property(property="unite", type="string", enum={"heures", "jours", "semaines", "mois"}, example="jours")
      *         )
      *     ),
      *     @OA\Response(
@@ -622,7 +655,12 @@ class CompteController extends Controller
 
         // Validate account eligibility: must be Epargne and Actif
         if ($compte->type !== 'Epargne' || $compte->statut !== 'Actif') {
-            return $this->errorResponse('Le compte n\'est pas éligible au blocage. Seuls les comptes Epargne actifs peuvent être bloqués.', 'VALIDATION_ERROR', 400);
+            return $this->errorResponse('Le compte n\'est pas éligible au blocage. Seuls les comptes Epargne actifs peuvent être bloqués.', 400, 'VALIDATION_ERROR');
+        }
+
+        // Check if account is already blocked
+        if ($compte->isBlocked()) {
+            return $this->errorResponse('Le compte est déjà bloqué.', 400, 'VALIDATION_ERROR');
         }
 
         // Authorize
@@ -639,13 +677,16 @@ class CompteController extends Controller
 
         // Update account
         $compte->update([
-            'statut' => 'bloque',
+            'statut' => 'Bloque',
             'motifBlocage' => $validated['motif'],
             'date_debut_blocage' => $dateBlocage,
             'date_fin_blocage' => $dateDeblocagePrevue,
         ]);
 
-        return $this->successResponse(new CompteResource($compte), 'Compte bloqué avec succès');
+        // Load client relationship for the response
+        $compte->load('client');
+
+        return $this->successResponse(new CompteResource($compte), 'Compte bloqué avec succès', 200);
     }
 
     private function calculateDeblocageDate($startDate, $duree, $unite)
@@ -653,17 +694,14 @@ class CompteController extends Controller
         $date = clone $startDate;
 
         switch ($unite) {
-            case 'jour':
+            case 'heures':
+                return $date->addHours($duree);
             case 'jours':
                 return $date->addDays($duree);
-            case 'semaine':
             case 'semaines':
                 return $date->addWeeks($duree);
             case 'mois':
                 return $date->addMonths($duree);
-            case 'annee':
-            case 'annees':
-                return $date->addYears($duree);
             default:
                 throw new \InvalidArgumentException('Unité de durée invalide');
         }
@@ -748,8 +786,13 @@ class CompteController extends Controller
         }
 
         // Validate account eligibility: must be Epargne and bloque
-        if ($compte->type !== 'Epargne' || $compte->statut !== 'bloque') {
-            return $this->errorResponse('Le compte n\'est pas éligible au déblocage. Seuls les comptes Epargne bloqués peuvent être débloqués.', 'VALIDATION_ERROR', 400);
+        if ($compte->type !== 'Epargne' || $compte->statut !== 'Bloque') {
+            return $this->errorResponse('Le compte n\'est pas éligible au déblocage. Seuls les comptes Epargne bloqués peuvent être débloqués.', 400, 'VALIDATION_ERROR');
+        }
+
+        // Check if account is actually blocked (considering dates)
+        if (!$compte->isBlocked()) {
+            return $this->errorResponse('Le compte n\'est pas actuellement bloqué.', 400, 'VALIDATION_ERROR');
         }
 
         // Authorize
@@ -762,13 +805,16 @@ class CompteController extends Controller
 
         // Update account
         $compte->update([
-            'statut' => 'actif',
+            'statut' => 'Actif',
             'motifBlocage' => null, // Clear blocking motif
             'date_debut_blocage' => null,
             'date_fin_blocage' => null,
         ]);
 
-        return $this->successResponse(new CompteResource($compte), 'Compte débloqué avec succès');
+        // Load client relationship for the response
+        $compte->load('client');
+
+        return $this->successResponse(new CompteResource($compte), 'Compte débloqué avec succès', 200);
     }
 
     /**
@@ -841,6 +887,9 @@ class CompteController extends Controller
         // Archive all transactions for this account
         Transaction::where('compte_id', $compte->id)
             ->update(['statut' => 'Archivee']);
+
+        // Load client relationship for the response
+        $compte->load('client');
 
         return $this->successResponse(new CompteResource($compte), 'Compte archivé avec succès');
     }

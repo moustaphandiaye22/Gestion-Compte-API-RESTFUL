@@ -27,6 +27,17 @@ class CompteResource extends JsonResource
              'dateBlocage' => $this->date_debut_blocage?->toISOString(),
              'dateDeblocagePrevue' => $this->date_fin_blocage?->toISOString(),
              'dateFermeture' => $this->dateFermeture?->toISOString(),
+             'client' => $this->whenLoaded('client', function () {
+                 return [
+                     'id' => $this->client->id,
+                     'titulaire' => $this->client->titulaire,
+                     'nci' => $this->client->cni,
+                     'email' => $this->client->email,
+                     'telephone' => $this->client->telephone,
+                     'adresse' => $this->client->adresse,
+                 ];
+             }),
+             'nombreTransactions' => $this->transactions()->count(),
              'metadata' => [
                  'derniereModification' => $this->updated_at?->toISOString(),
                  'version' => 1,
