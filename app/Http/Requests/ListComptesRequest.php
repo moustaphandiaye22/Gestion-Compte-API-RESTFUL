@@ -25,7 +25,7 @@ class ListComptesRequest extends FormRequest
             'page' => 'integer|min:1',
             'limit' => 'integer|min:1|max:100',
             'type' => 'nullable|in:Epargne,Cheque',
-            'statut' => 'nullable|in:Actif,Bloque,Ferme',
+            'statut' => 'nullable|in:Actif', // Only Actif allowed
             'devise' => 'nullable|string|max:10',
             'search' => 'nullable|string|max:255',
             'sort' => 'nullable|in:dateCreation,solde,titulaire,numeroCompte,type,statut,devise',
@@ -49,7 +49,7 @@ class ListComptesRequest extends FormRequest
             'limit.min' => 'La limite doit être au moins 1.',
             'limit.max' => 'La limite ne peut pas dépasser 100.',
             'type.in' => 'Le type doit être soit "Epargne" soit "Cheque".',
-            'statut.in' => 'Le statut doit être "Actif", "Bloque" ou "Ferme".',
+            'statut.in' => 'Le statut doit être "Actif".', // Only Actif allowed
             'devise.string' => 'La devise doit être une chaîne de caractères.',
             'devise.max' => 'La devise ne peut pas dépasser 10 caractères.',
             'search.string' => 'La recherche doit être une chaîne de caractères.',

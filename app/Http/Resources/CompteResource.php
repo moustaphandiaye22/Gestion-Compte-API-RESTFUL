@@ -24,8 +24,8 @@ class CompteResource extends JsonResource
              'dateCreation' => $this->dateCreation?->toISOString(),
              'statut' => $this->statut,
              'motifBlocage' => $this->motifBlocage,
-             'dateBlocage' => $this->date_debut_blocage?->toISOString(),
-             'dateDeblocagePrevue' => $this->date_fin_blocage?->toISOString(),
+             'dateBlocage' => $this->when($this->type === 'Epargne', $this->date_debut_blocage?->toISOString()),
+             'dateDeblocagePrevue' => $this->when($this->type === 'Epargne', $this->date_fin_blocage?->toISOString()),
              'dateFermeture' => $this->dateFermeture?->toISOString(),
              'client' => $this->whenLoaded('client', function () {
                  return [

@@ -16,11 +16,11 @@ class Kernel extends ConsoleKernel
     {
          // $schedule->command('inspire')->hourly();
 
-         // Schedule archiving job daily at 1 AM
-         $schedule->job(new ArchiveExpiredBlockedAccounts)->dailyAt('01:00');
+         // Schedule unarchiving job first (reactivate expired blocked accounts)
+         $schedule->job(new UnarchiveExpiredBlockedAccounts)->dailyAt('01:00');
 
-         // Schedule unarchiving job daily at 2 AM
-         $schedule->job(new UnarchiveExpiredBlockedAccounts)->dailyAt('02:00');
+         // Schedule archiving job after (archive newly expired accounts)
+         $schedule->job(new ArchiveExpiredBlockedAccounts)->dailyAt('02:00');
     }
 
     /**

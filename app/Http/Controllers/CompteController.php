@@ -75,9 +75,9 @@ class CompteController extends Controller
      *     @OA\Parameter(
      *         name="statut",
      *         in="query",
-     *         description="Filtrer par statut (actif, bloque, ferme)",
+     *         description="Filtrer par statut (actif uniquement)",
      *         required=false,
-     *         @OA\Schema(type="string")
+     *         @OA\Schema(type="string", enum={"actif"})
      *     ),
      *     @OA\Parameter(
      *         name="search",
@@ -481,6 +481,11 @@ class CompteController extends Controller
             throw new CompteNotFoundException();
         }
 
+        // Check if account is active (only active accounts can be deleted)
+        if ($compte->statut !== 'Actif') {
+            return $this->errorResponse('Seuls les comptes actifs peuvent être supprimés.', 400, 'VALIDATION_ERROR');
+        }
+
         // Authorize the user
         if ($isAdmin) {
             // Proceed as admin
@@ -577,8 +582,8 @@ class CompteController extends Controller
     /**
      * @OA\Post(
      *     path="/ndiaye/v1/comptes/{compteId}/bloquer",
-     *     summary="Bloquer un compte Epargne",
-     *     description="Bloque un compte Epargne actif en définissant le motif, la durée et l'unité de blocage. Calcule automatiquement les dates de début et fin de blocage. Accessible uniquement aux administrateurs.",
+     *     summary="[ADMIN] Bloquer un compte Epargne - Géré par les Jobs",
+     *     description="Cette endpoint est réservée aux administrateurs pour bloquer manuellement un compte Epargne. L'archivage automatique est géré par les Jobs programmés.",
      *     @OA\Parameter(
      *         name="compteId",
      *         in="path",
@@ -617,7 +622,7 @@ class CompteController extends Controller
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="error", type="object",
      *                 @OA\Property(property="code", type="string", example="VALIDATION_ERROR"),
-     *                 @OA\Property(property="message", type="string", example="Le compte n'est pas éligible au blocage")
+     *                 @OA\Property(property="message", type="string", example="Le compte n'est pas éligible au blocage. Seuls les comptes Epargne actifs peuvent être bloqués.")
      *             )
      *         )
      *     ),
@@ -710,73 +715,6 @@ class CompteController extends Controller
         }
     }
 
-    /**
-     * @OA\Post(
-     *     path="/ndiaye/v1/comptes/{compteId}/debloquer",
-     *     summary="Débloquer un compte Epargne",
-     *     description="Débloque un compte Epargne bloqué en définissant le motif de déblocage. Accessible uniquement aux administrateurs.",
-     *     @OA\Parameter(
-     *         name="compteId",
-     *         in="path",
-     *         description="L'ID du compte",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"motif"},
-     *             @OA\Property(property="motif", type="string", example="Vérification complétée")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Compte débloqué avec succès",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Compte débloqué avec succès"),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
-     *                 @OA\Property(property="statut", type="string", example="actif"),
-     *                 @OA\Property(property="dateDeblocage", type="string", format="date-time", example="2025-10-19T12:00:00Z")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Erreur de validation ou compte non éligible",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="VALIDATION_ERROR"),
-     *                 @OA\Property(property="message", type="string", example="Le compte n'est pas éligible au déblocage")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Compte not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
-     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
-     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
-     *             )
-     *         )
-     *     )
-     * )
-     */
     public function debloquer(DebloquerCompteRequest $request, string $compteId)
     {
         // Pour le moment, sans authentification, traiter comme admin
@@ -820,54 +758,6 @@ class CompteController extends Controller
         return $this->successResponse(new CompteResource($compte), 'Compte débloqué avec succès', 200);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/ndiaye/v1/comptes/{compte}/archiver",
-     *     summary="[ACTION] Archiver manuellement un compte",
-     *     description="Archive manuellement un compte en définissant son statut à 'Supprime' et archive toutes ses transactions. Accessible uniquement aux administrateurs. Cette action est différente de l'archivage automatique qui se fait via les jobs programmés pour les comptes bloqués expirés.",
-     *     @OA\Parameter(
-     *         name="compte",
-     *         in="path",
-     *         description="L'ID du compte à archiver",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Compte archivé avec succès",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Compte archivé avec succès"),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
-     *                 @OA\Property(property="statut", type="string", example="Supprime")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Compte not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
-     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
-     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
-     *             )
-     *         )
-     *     )
-     * )
-     */
     public function archiver(string $compte)
     {
         // Pour le moment, sans authentification, traiter comme admin
@@ -895,5 +785,135 @@ class CompteController extends Controller
         $compte->load('client');
 
         return $this->successResponse(new CompteResource($compte), 'Compte archivé avec succès');
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/ndiaye/v1/comptes/recherche/{numero}",
+     *     summary="Rechercher un compte par numéro",
+     *     description="Recherche un compte par son numéro. Si le compte est archivé (Épargne), il est récupéré depuis Neon.",
+     *     @OA\Parameter(
+     *         name="numero",
+     *         in="path",
+     *         description="Le numéro du compte à rechercher",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte trouvé",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="numeroCompte", type="string", example="C00123456"),
+     *                 @OA\Property(property="titulaire", type="string", example="Amadou Diallo"),
+     *                 @OA\Property(property="type", type="string", example="epargne"),
+     *                 @OA\Property(property="solde", type="number", example=1250000),
+     *                 @OA\Property(property="statut", type="string", example="actif"),
+     *                 @OA\Property(property="dateBlocage", type="string", format="date-time", example="2025-10-29T12:52:24.000000Z", nullable=true),
+     *                 @OA\Property(property="dateDeblocagePrevue", type="string", format="date-time", example="2025-11-28T12:52:24.000000Z", nullable=true),
+     *                 @OA\Property(property="metadata", type="object",
+     *                     @OA\Property(property="derniereModification", type="string", format="date-time", example="2023-06-10T14:30:00Z"),
+     *                     @OA\Property(property="version", type="integer", example=1)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec le numéro spécifié n'existe pas")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function rechercheParNumero(string $numero)
+    {
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+        $clientId = null;
+
+        // Use service to find account by numero
+        $compte = $this->compteService->findCompteByNumero($numero, $clientId);
+
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Load client relationship for the response
+        $compte->load('client');
+
+        return $this->successResponse(new CompteResource($compte));
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/ndiaye/v1/comptes/recherche/cni/{cni}",
+     *     summary="Rechercher un compte par CNI",
+     *     description="Recherche un compte par le CNI du client. Si le compte est archivé (Épargne), il est récupéré depuis Neon.",
+     *     @OA\Parameter(
+     *         name="cni",
+     *         in="path",
+     *         description="Le CNI du client",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte trouvé",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="numeroCompte", type="string", example="C00123456"),
+     *                 @OA\Property(property="titulaire", type="string", example="Amadou Diallo"),
+     *                 @OA\Property(property="type", type="string", example="epargne"),
+     *                 @OA\Property(property="solde", type="number", example=1250000),
+     *                 @OA\Property(property="statut", type="string", example="actif"),
+     *                 @OA\Property(property="dateBlocage", type="string", format="date-time", example="2025-10-29T12:52:24.000000Z", nullable=true),
+     *                 @OA\Property(property="dateDeblocagePrevue", type="string", format="date-time", example="2025-11-28T12:52:24.000000Z", nullable=true),
+     *                 @OA\Property(property="metadata", type="object",
+     *                     @OA\Property(property="derniereModification", type="string", format="date-time", example="2023-06-10T14:30:00Z"),
+     *                     @OA\Property(property="version", type="integer", example=1)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec le CNI spécifié n'existe pas")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function rechercheParCni(string $cni)
+    {
+        // Pour le moment, sans authentification, traiter comme admin
+        $isAdmin = true;
+        $clientId = null;
+
+        // Use service to find account by CNI
+        $compte = $this->compteService->findCompteByCni($cni, $clientId);
+
+        if (!$compte) {
+            throw new CompteNotFoundException();
+        }
+
+        // Load client relationship for the response
+        $compte->load('client');
+
+        return $this->successResponse(new CompteResource($compte));
     }
 }
