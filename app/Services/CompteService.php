@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Compte;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Service pour la gestion des comptes bancaires
@@ -249,10 +251,41 @@ class CompteService
        */
     private function findInNeon(string $numero, ?string $clientId = null): ?Compte
     {
-        // Simulation de l'appel à Neon
-        // En production : Http::get("https://neon-api.example.com/comptes/numero/{$numero}")
+        try {
+            // Utiliser la connexion pgsql_local pour accéder à Render
+            $compteData = DB::connection('pgsql_neon')
+                ->table('comptes')
+                ->where('numeroCompte', $numero)
+                ->where('type', 'Epargne')
+                ->where('statut', 'Supprime')
+                ->first();
 
-        // Pour la démo, retourner null (pas de compte archivé)
+            if ($compteData) {
+                // Créer une instance Compte à partir des données
+                $compte = new Compte();
+                $compte->fill((array) $compteData);
+                $compte->exists = true; // Marquer comme existant
+
+                // Charger le client depuis Neon aussi
+                $clientData = DB::connection('pgsql_neon')
+                    ->table('clients')
+                    ->where('id', $compteData->client_id)
+                    ->first();
+
+                if ($clientData) {
+                    $client = new \App\Models\Client();
+                    $client->fill((array) $clientData);
+                    $client->exists = true;
+                    $compte->setRelation('client', $client);
+                }
+
+                return $compte;
+            }
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas interrompre le processus
+            Log::error('Erreur lors de la recherche dans Neon: ' . $e->getMessage());
+        }
+
         return null;
     }
 
@@ -261,10 +294,43 @@ class CompteService
        */
     private function findInNeonByCni(string $cni, ?string $clientId = null): ?Compte
     {
-        // Simulation de l'appel à Neon
-        // En production : Http::get("https://neon-api.example.com/comptes/cni/{$cni}")
+        try {
+            // Utiliser la connexion pgsql_local pour accéder à Render
+            $compteData = DB::connection('pgsql_neon')
+                ->table('comptes')
+                ->join('clients', 'comptes.client_id', '=', 'clients.id')
+                ->where('clients.cni', $cni)
+                ->where('comptes.type', 'Epargne')
+                ->where('comptes.statut', 'Supprime')
+                ->select('comptes.*')
+                ->first();
 
-        // Pour la démo, retourner null (pas de compte archivé)
+            if ($compteData) {
+                // Créer une instance Compte à partir des données
+                $compte = new Compte();
+                $compte->fill((array) $compteData);
+                $compte->exists = true;
+
+                // Charger le client depuis Neon aussi
+                $clientData = DB::connection('pgsql_neon')
+                    ->table('clients')
+                    ->where('id', $compteData->client_id)
+                    ->first();
+
+                if ($clientData) {
+                    $client = new \App\Models\Client();
+                    $client->fill((array) $clientData);
+                    $client->exists = true;
+                    $compte->setRelation('client', $client);
+                }
+
+                return $compte;
+            }
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas interrompre le processus
+            Log::error('Erreur lors de la recherche dans Neon par CNI: ' . $e->getMessage());
+        }
+
         return null;
     }
 
