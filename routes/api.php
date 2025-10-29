@@ -21,7 +21,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
 // Routes API version 1
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware(['rating'])->group(function () {
 
     /**
       * Routes pour les comptes
@@ -38,11 +38,11 @@ Route::prefix('v1')->group(function () {
     Route::post('comptes/{compteId}/bloquer', [CompteController::class, 'bloquer'])
             ->name('comptes.bloquer');
 
-    // Route pour débloquer un compte
-    Route::post('comptes/{compteId}/debloquer', [CompteController::class, 'debloquer'])
-            ->name('comptes.debloquer');
+    // Routes de recherche de comptes
+    Route::get('comptes/recherche/{numero}', [CompteController::class, 'rechercheParNumero'])
+            ->name('comptes.recherche.numero');
 
-    // Route pour archiver un compte
-    Route::post('comptes/{compte}/archiver', [CompteController::class, 'archiver'])
-            ->name('comptes.archiver');
+    Route::get('comptes/recherche/cni/{cni}', [CompteController::class, 'rechercheParCni'])
+            ->name('comptes.recherche.cni');
+
 });

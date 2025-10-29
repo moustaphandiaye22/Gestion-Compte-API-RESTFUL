@@ -20,7 +20,7 @@ class CompteService
         $query = Compte::query()
             ->with('client')
             ->whereIn('comptes.type', ['Epargne', 'Cheque'])
-            ->whereIn('comptes.statut', ['Actif', 'Bloque', 'Ferme']);
+            ->where('comptes.statut', 'Actif');
 
         // Filtrage par client si spécifié
         if ($clientId) {
@@ -160,7 +160,7 @@ class CompteService
         // First, try to find in local database for active cheque or epargne accounts
         $compte = Compte::where('id', $id)
             ->whereIn('type', ['Cheque', 'Epargne'])
-            ->whereIn('statut', ['Actif', 'Bloque', 'Ferme'])
+            ->where('statut', 'Actif')
             ->first();
 
         if ($compte) {
@@ -189,8 +189,88 @@ class CompteService
     }
 
     /**
-      * Récupère les statistiques des comptes
-      */
+       * Recherche un compte par numéro
+       */
+    public function findCompteByNumero(string $numero, ?string $clientId = null): ?Compte
+    {
+        // Recherche d'abord dans les comptes actifs
+        $compte = Compte::numero($numero)->first();
+
+        if ($compte) {
+            // Check authorization if clientId is provided
+            if ($clientId && $compte->client_id !== $clientId) {
+                return null; // Client can only access their own accounts
+            }
+            return $compte;
+        }
+
+        // Si non trouvé et que c'est un compte Épargne, chercher dans Neon (archivé)
+        if (str_starts_with($numero, 'CPT-') && $this->isEpargneAccount($numero)) {
+            return $this->findInNeon($numero, $clientId);
+        }
+
+        return null;
+    }
+
+    /**
+       * Recherche un compte par CNI du client
+       */
+    public function findCompteByCni(string $cni, ?string $clientId = null): ?Compte
+    {
+        // Recherche d'abord dans les comptes actifs
+        $compte = Compte::whereHas('client', function ($query) use ($cni) {
+            $query->where('cni', $cni);
+        })->first();
+
+        if ($compte) {
+            // Check authorization if clientId is provided
+            if ($clientId && $compte->client_id !== $clientId) {
+                return null; // Client can only access their own accounts
+            }
+            return $compte;
+        }
+
+        // Si non trouvé, chercher dans Neon pour comptes Épargne archivés
+        return $this->findInNeonByCni($cni, $clientId);
+    }
+
+    /**
+       * Vérifie si un numéro de compte correspond à un compte Épargne
+       */
+    private function isEpargneAccount(string $numero): bool
+    {
+        // Logique simplifiée : on considère que tous les comptes peuvent être Épargne
+        // En production, on pourrait avoir une logique plus sophistiquée
+        return true;
+    }
+
+    /**
+       * Recherche dans Neon (base de données cloud pour comptes archivés)
+       */
+    private function findInNeon(string $numero, ?string $clientId = null): ?Compte
+    {
+        // Simulation de l'appel à Neon
+        // En production : Http::get("https://neon-api.example.com/comptes/numero/{$numero}")
+
+        // Pour la démo, retourner null (pas de compte archivé)
+        return null;
+    }
+
+    /**
+       * Recherche dans Neon par CNI
+       */
+    private function findInNeonByCni(string $cni, ?string $clientId = null): ?Compte
+    {
+        // Simulation de l'appel à Neon
+        // En production : Http::get("https://neon-api.example.com/comptes/cni/{$cni}")
+
+        // Pour la démo, retourner null (pas de compte archivé)
+        return null;
+    }
+
+    /**
+       * Récupère les statistiques des comptes
+       */
     public function getComptesStats(?string $clientId = null): array
     {
         $query = Compte::query();

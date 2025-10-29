@@ -27,9 +27,10 @@ class ArchiveExpiredBlockedAccounts implements ShouldQueue
       */
     public function handle(): void
     {
-        // Find accounts where blocking end date has expired
+        // Archive only Epargne accounts where blocking START date has expired (been blocked for too long)
         $expiredAccounts = Compte::where('statut', 'Bloque')
-            ->where('date_fin_blocage', '<=', now())
+            ->where('type', 'Epargne')
+            ->where('date_debut_blocage', '<=', now()->subDays(30)) // Been blocked for more than 30 days
             ->get();
 
         foreach ($expiredAccounts as $account) {
