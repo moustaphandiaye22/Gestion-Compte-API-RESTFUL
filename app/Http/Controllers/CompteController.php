@@ -392,13 +392,84 @@ class CompteController extends Controller
     }
 
 
-    public function update(UpdateCompteRequest $request, string $id)
+    /**
+     * @OA\Patch(
+     *     path="/ndiaye/v1/comptes/{compteId}",
+     *     summary="Mettre à jour les informations du client",
+     *     description="Met à jour les informations du client associé à un compte. Tous les champs sont optionnels mais au moins un champ doit être fourni.",
+     *     @OA\Parameter(
+     *         name="compteId",
+     *         in="path",
+     *         description="L'ID du compte",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="titulaire", type="string", example="Amadou Diallo Junior"),
+     *             @OA\Property(property="informationsClient", type="object",
+     *                 @OA\Property(property="telephone", type="string", example="+221771234568"),
+     *                 @OA\Property(property="email", type="string", format="email", example="amadou.diallo@example.com"),
+     *                 @OA\Property(property="password", type="string", example="newpassword123"),
+     *                 @OA\Property(property="nci", type="string", example="1234567890123A")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Compte mis à jour avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Compte mis à jour avec succès"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="numeroCompte", type="string", example="C00123456"),
+     *                 @OA\Property(property="titulaire", type="string", example="Amadou Diallo Junior"),
+     *                 @OA\Property(property="type", type="string", example="epargne"),
+     *                 @OA\Property(property="solde", type="number", example=1250000),
+     *                 @OA\Property(property="devise", type="string", example="FCFA"),
+     *                 @OA\Property(property="dateCreation", type="string", format="date-time", example="2023-03-15T00:00:00Z"),
+     *                 @OA\Property(property="statut", type="string", example="actif"),
+     *                 @OA\Property(property="metadata", type="object",
+     *                     @OA\Property(property="derniereModification", type="string", format="date-time", example="2025-10-19T11:00:00Z"),
+     *                     @OA\Property(property="version", type="integer", example=1)
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Erreurs de validation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="VALIDATION_ERROR"),
+     *                 @OA\Property(property="message", type="string", example="Les données fournies sont invalides"),
+     *                 @OA\Property(property="details", type="object")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function update(UpdateCompteRequest $request, string $compteId)
     {
         // Pour le moment, sans authentification, traiter comme admin
         $isAdmin = true;
 
         // Find the account
-        $compte = Compte::find($id);
+        $compte = Compte::find($compteId);
         if (!$compte) {
             throw new CompteNotFoundException();
         }
@@ -411,8 +482,32 @@ class CompteController extends Controller
         // Get validated data
         $validated = $request->validated();
 
-        // Update account
-        $compte->update($validated);
+        // Update account titulaire if provided
+        if (isset($validated['titulaire'])) {
+            $compte->update(['titulaire' => $validated['titulaire']]);
+        }
+
+        // Update client information if provided
+        if (isset($validated['informationsClient']) && !empty($validated['informationsClient'])) {
+            $clientData = array_filter($validated['informationsClient']); // Remove empty values
+
+            if (!empty($clientData)) {
+                // Hash password if provided
+                if (isset($clientData['password'])) {
+                    $clientData['password'] = bcrypt($clientData['password']);
+                }
+
+                $compte->client->update($clientData);
+
+                // Update user email if email changed
+                if (isset($clientData['email'])) {
+                    $compte->client->user->update(['email' => $clientData['email']]);
+                }
+            }
+        }
+
+        // Update metadata
+        $compte->update(['updated_at' => now()]);
 
         // Load client relationship for the response
         $compte->load('client');

@@ -82,19 +82,23 @@ return [
             ],
         ],
 
-        'pgsql_local' => [
+        'pgsql_neon' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_LOCAL_HOST', '127.0.0.1'),
-            'port' => env('DB_LOCAL_PORT', '5432'),
-            'database' => env('DB_LOCAL_DATABASE', 'forge'),
-            'username' => env('DB_LOCAL_USERNAME', 'forge'),
-            'password' => env('DB_LOCAL_PASSWORD', ''),
+            'host' => env('DB_NEON_HOST', 'ep-frosty-star-a4zv1cri-pooler.us-east-1.aws.neon.tech'),
+            'port' => env('DB_NEON_PORT', '5432'),
+            'database' => env('DB_NEON_DATABASE', 'neondb'),
+            'username' => env('DB_NEON_USERNAME', 'neondb_owner'),
+            'password' => env('DB_NEON_PASSWORD', 'npg_I2OGFpd3WRkq'),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'options' => [
+                PDO::ATTR_PERSISTENT => false,
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ],
         ],
 
         'sqlsrv' => [
