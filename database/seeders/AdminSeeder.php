@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Admin;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
@@ -12,14 +14,35 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\Admin::factory(5)->create()->each(function ($admin) {
-            $user = \App\Models\User::factory()->create([
-                'email' => fake()->unique()->safeEmail,
-                'password' => bcrypt('password'),
-                'userable_id' => $admin->id,
-                'userable_type' => \App\Models\Admin::class,
-            ]);
-            $admin->user()->save($user);
-        });
+        // Créer un admin
+        $admin = Admin::create([
+            'nom' => 'Admin',
+            'poste' => 'Super Admin',
+            'date_creation' => now(),
+        ]);
+
+        // Créer l'utilisateur associé
+        User::create([
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password123'),
+            'code' => 'ADMIN001',
+            'userable_id' => $admin->id,
+            'userable_type' => Admin::class,
+        ]);
+
+        // Créer un deuxième admin pour les tests
+        $admin2 = Admin::create([
+            'nom' => 'Manager',
+            'poste' => 'Bank Manager',
+            'date_creation' => now(),
+        ]);
+
+        User::create([
+            'email' => 'manager@example.com',
+            'password' => Hash::make('password123'),
+            'code' => 'ADMIN002',
+            'userable_id' => $admin2->id,
+            'userable_type' => Admin::class,
+        ]);
     }
 }

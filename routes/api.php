@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CompteController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,7 +21,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-// Routes API version 1
+// Routes d'authentification (sans authentification requise)
+Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
+    Route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
+    Route::post('auth/refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
+    Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+    Route::get('auth/user', [AuthController::class, 'user'])->name('auth.user');
+});
+
+// Routes API version 1 (avec authentification)
 Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
 
     /**
@@ -34,8 +43,9 @@ Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
     Route::get('comptes-archives', [CompteController::class, 'archives'])
             ->name('comptes.archives');
 
-    // Route pour bloquer un compte
+    // Route pour bloquer un compte (admin seulement)
     Route::post('comptes/{compteId}/bloquer', [CompteController::class, 'bloquer'])
+            ->middleware('role:admin')
             ->name('comptes.bloquer');
 
     // Routes de recherche de comptes
