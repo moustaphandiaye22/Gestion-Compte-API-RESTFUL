@@ -41,6 +41,8 @@ class Kernel extends HttpKernel
         'api' => [
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            // Désactiver debugbar en développement pour éviter les conflits
+            // \Barryvdh\Debugbar\Middleware\InjectDebugbar::class,
         ],
     ];
 
@@ -64,6 +66,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'rating' => \App\Http\Middleware\RatingMiddleware::class,
+        'auth.api' => \App\Http\Middleware\AuthMiddleware::class,
+        'role' => \App\Http\Middleware\RoleMiddleware::class,
         'logging' => \App\Http\Middleware\LoggingMiddleware::class,
     ];
 }

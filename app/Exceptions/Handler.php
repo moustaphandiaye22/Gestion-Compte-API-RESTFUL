@@ -33,7 +33,8 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $e)
     {
-        if ($request->expectsJson()) {
+        // Always return JSON for API requests to avoid HTML view errors
+        if ($request->expectsJson() || $request->is('api/*') || $request->is('ndiaye/*')) {
             $statusCode = 500; // Default to 500 for server errors
 
             // Handle specific exception types
