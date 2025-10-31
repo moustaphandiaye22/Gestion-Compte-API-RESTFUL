@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('oauth_access_tokens', function (Blueprint $table) {
             $table->string('id', 100)->primary();
-            $table->unsignedBigInteger('user_id')->nullable()->index();
+            // User IDs are UUIDs in this application; use string to store them
+            $table->string('user_id', 36)->nullable()->index();
             $table->unsignedBigInteger('client_id');
             $table->string('name')->nullable();
             $table->text('scopes')->nullable();
-            $table->boolean('revoked');
+            // Use smallInteger for revoked because PostgreSQL is strict about boolean vs integer
+            // Passport sometimes writes 0/1 values; using smallInteger avoids SQL type mismatch.
+            $table->smallInteger('revoked')->default(0);
             $table->timestamps();
             $table->dateTime('expires_at')->nullable();
         });

@@ -18,7 +18,8 @@ class AuthMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user()) {
+        // Check if user exists and token is not revoked
+        if (!$request->user() || ($request->user()->token() && $request->user()->token()->revoked)) {
             return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
         }
 

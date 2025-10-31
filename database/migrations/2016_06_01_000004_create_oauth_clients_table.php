@@ -13,14 +13,17 @@ return new class extends Migration
     {
         Schema::create('oauth_clients', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('user_id')->nullable()->index();
+            // If users are UUIDs, store the owner id as string
+            $table->string('user_id', 36)->nullable()->index();
             $table->string('name');
             $table->string('secret', 100)->nullable();
             $table->string('provider')->nullable();
             $table->text('redirect');
-            $table->boolean('personal_access_client');
-            $table->boolean('password_client');
-            $table->boolean('revoked');
+            // Use smallInteger for better compatibility with Postgres prepared statements
+            // Passport may insert 1/0 as integers; keeping boolean here caused a type mismatch
+            $table->smallInteger('personal_access_client')->default(0);
+            $table->smallInteger('password_client')->default(0);
+            $table->smallInteger('revoked')->default(0);
             $table->timestamps();
         });
     }
