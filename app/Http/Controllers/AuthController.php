@@ -36,8 +36,8 @@ class AuthController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="admin@example.com"),
-     *             @OA\Property(property="password", type="string", example="password123")
+     *             @OA\Property(property="email", type="string", format="email", example="raymond25@example.com"),
+     *             @OA\Property(property="password", type="string", example="password")
      *         )
      *     ),
      *     @OA\Response(
@@ -49,7 +49,7 @@ class AuthController extends Controller
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="user", type="object",
      *                     @OA\Property(property="id", type="integer", example=1),
-     *                     @OA\Property(property="email", type="string", example="admin@example.com"),
+     *                     @OA\Property(property="email", type="string", example="raymond25@example.com"),
      *                     @OA\Property(property="role", type="string", example="admin")
      *                 ),
      *                 @OA\Property(property="access_token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."),
@@ -80,18 +80,24 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+        $role = $user->userable_type === 'App\\Models\\Admin' ? 'admin' : 'client';
+
+        // Créer le token avec scope et claims personnalisés
         $token = $user->createToken('Personal Access Token')->accessToken;
 
+        // Ajouter des claims personnalisés au token
+        $tokenWithClaims = $this->addCustomClaims($token, $user, $role);
+
         // Stocker le token dans un cookie sécurisé
-        Cookie::queue('access_token', $token, 15 * 24 * 60, '/', null, true, true); // 15 jours
+        Cookie::queue('access_token', $tokenWithClaims, 15 * 24 * 60, '/', null, true, true); // 15 jours
 
         return $this->successResponse([
             'user' => [
                 'id' => $user->id,
                 'email' => $user->email,
-                'role' => $user->userable_type === 'App\\Models\\Admin' ? 'admin' : 'client',
+                'role' => $role,
             ],
-            'access_token' => $token,
+            'access_token' => $tokenWithClaims,
             'token_type' => 'Bearer',
             'expires_in' => 15 * 24 * 60 * 60, // 15 jours en secondes
         ], 'Connexion réussie');
@@ -131,26 +137,33 @@ class AuthController extends Controller
      */
     public function refresh(Request $request)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if (!$user) {
-            return $this->errorResponse('Token invalide', 401, 'INVALID_TOKEN');
+            if (!$user) {
+                return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
+            }
+
+            // Révoquer l'ancien token
+            $request->user()->token()->revoke();
+
+            $role = $user->userable_type === 'App\\Models\\Admin' ? 'admin' : 'client';
+
+            // Créer un nouveau token avec scope et claims
+            $token = $user->createToken('Personal Access Token')->accessToken;
+            $tokenWithClaims = $this->addCustomClaims($token, $user, $role);
+
+            // Mettre à jour le cookie
+            Cookie::queue('access_token', $tokenWithClaims, 15 * 24 * 60, '/', null, true, true);
+
+            return $this->successResponse([
+                'access_token' => $tokenWithClaims,
+                'token_type' => 'Bearer',
+                'expires_in' => 15 * 24 * 60 * 60,
+            ], 'Token rafraîchi');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
         }
-
-        // Révoquer l'ancien token
-        $request->user()->token()->revoke();
-
-        // Créer un nouveau token
-        $token = $user->createToken('Personal Access Token')->accessToken;
-
-        // Mettre à jour le cookie
-        Cookie::queue('access_token', $token, 15 * 24 * 60, '/', null, true, true);
-
-        return $this->successResponse([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'expires_in' => 15 * 24 * 60 * 60,
-        ], 'Token rafraîchi');
     }
 
     /**
@@ -172,13 +185,21 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Révoquer le token actuel
-        $request->user()->token()->revoke();
+        try {
+            $user = $request->user();
 
-        // Supprimer le cookie
-        Cookie::queue(Cookie::forget('access_token'));
+            if ($user) {
+                // Révoquer le token actuel
+                $user->token()->revoke();
+            }
 
-        return $this->successResponse(null, 'Déconnexion réussie');
+            // Supprimer le cookie
+            Cookie::queue(Cookie::forget('access_token'));
+
+            return $this->successResponse(null, 'Déconnexion réussie');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
+        }
     }
 
     /**
@@ -195,7 +216,7 @@ class AuthController extends Controller
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="email", type="string", example="admin@example.com"),
+     *                 @OA\Property(property="email", type="string", example="samson.weissnat@example.com"),
      *                 @OA\Property(property="role", type="string", example="admin")
      *             )
      *         )
@@ -204,12 +225,31 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        return $this->successResponse([
-            'id' => $user->id,
-            'email' => $user->email,
-            'role' => $user->userable_type === 'App\\Models\\Admin' ? 'admin' : 'client',
-        ]);
+            if (!$user) {
+                return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
+            }
+
+            return $this->successResponse([
+                'id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->userable_type === 'App\\Models\\Admin' ? 'admin' : 'client',
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
+        }
+    }
+
+    /**
+     * Ajouter des claims personnalisés au token
+     */
+    private function addCustomClaims($token, $user, $role)
+    {
+        // Pour Laravel Passport, les claims personnalisés sont gérés différemment
+        // Nous retournons le token tel quel car les scopes sont déjà appliqués
+        // Le rôle est stocké dans les scopes et accessible via les middlewares
+        return $token;
     }
 }

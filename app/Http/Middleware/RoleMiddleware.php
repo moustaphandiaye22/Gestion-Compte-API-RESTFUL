@@ -33,6 +33,12 @@ class RoleMiddleware
             return $this->errorResponse('Permissions insuffisantes', 403, 'INSUFFICIENT_PERMISSIONS');
         }
 
+        // Vérifier les scopes du token (permissions sur les ressources)
+        $token = $request->user()->token();
+        if ($token && !$token->can($role)) {
+            return $this->errorResponse('Permissions insuffisantes sur cette ressource', 403, 'INSUFFICIENT_SCOPE_PERMISSIONS');
+        }
+
         return $next($request);
     }
 }

@@ -44,14 +44,27 @@ class Handler extends ExceptionHandler
                 $statusCode = 403;
             } elseif ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
                 $statusCode = 404;
+            } elseif ($e instanceof \League\OAuth2\Server\Exception\OAuthServerException ||
+                      $e instanceof \Laravel\Passport\Exceptions\MissingScopeException ||
+                      $e instanceof \Illuminate\Auth\AuthenticationException) {
+                // Handle Passport and authentication exceptions
+                $statusCode = 401;
+                $errorCode = 'UNAUTHENTICATED';
+                $message = 'Authentification requise';
+            }
+
+            $error = [
+                'code' => $errorCode ?? get_class($e),
+                'message' => $message ?? $e->getMessage(),
+            ];
+
+            if ($statusCode >= 500 && !app()->environment('production')) {
+                $error['trace'] = $e->getTraceAsString();
             }
 
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => get_class($e),
-                    'message' => $e->getMessage(),
-                ]
+                'error' => $error
             ], $statusCode);
         }
 

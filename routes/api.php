@@ -24,13 +24,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Routes d'authentification (sans authentification requise)
 Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
-    Route::post('auth/refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
-    Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
-    Route::get('auth/user', [AuthController::class, 'user'])->name('auth.user');
+    Route::post('auth/refresh', [AuthController::class, 'refresh'])->middleware(['auth:api', 'auth.api'])->name('auth.refresh');
+    Route::post('auth/logout', [AuthController::class, 'logout'])->middleware(['auth:api', 'auth.api'])->name('auth.logout');
+    Route::get('auth/user', [AuthController::class, 'user'])->middleware(['auth:api', 'auth.api'])->name('auth.user');
 });
 
 // Routes API version 1 (avec authentification)
-Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
+Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(function () {
 
     /**
       * Routes pour les comptes
