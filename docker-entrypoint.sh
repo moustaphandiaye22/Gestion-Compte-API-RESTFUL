@@ -14,6 +14,9 @@ php artisan migrate --force
 echo "Executing seeders"
 php artisan db:seed --force
 
+echo "Installing Passport keys if not exist"
+php artisan passport:install --force
+
 echo "Clearing and caching configuration..."
 php artisan config:clear
 php artisan config:cache
