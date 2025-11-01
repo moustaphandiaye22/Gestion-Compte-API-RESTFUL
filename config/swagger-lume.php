@@ -36,12 +36,14 @@ return [
         'base' => null,
         'views' => base_path('resources/views/vendor/swagger-lume'),
     ],
+    // Default security schemes used in generated OpenAPI docs.
+    // Use a Bearer (Authorization header) scheme for Passport (API tokens).
     'security' => [
-        'sanctum' => [
-            'type' => 'apiKey',
-            'description' => 'Enter token in text box below.',
-            'name' => 'Authorization',
-            'in' => 'header',
+        'bearerAuth' => [
+            'type' => 'http',
+            'scheme' => 'bearer',
+            'bearerFormat' => 'Bearer',
+            'description' => 'Enter your access token as: Bearer {token}',
         ],
     ],
     'generate_always' => true,

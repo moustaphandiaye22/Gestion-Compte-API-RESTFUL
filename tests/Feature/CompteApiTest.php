@@ -39,8 +39,9 @@ class CompteApiTest extends TestCase
         ]);
 
         // Créer des tokens
-        $this->adminToken = $adminUser->createToken('admin-token')->plainTextToken;
-        $this->clientToken = $clientUser->createToken('client-token')->plainTextToken;
+    // Use Passport access tokens (not Sanctum plain text tokens)
+    $this->adminToken = $adminUser->createToken('admin-token')->accessToken;
+    $this->clientToken = $clientUser->createToken('client-token')->accessToken;
 
         // Créer des comptes de test
         Compte::factory()->count(5)->create([
