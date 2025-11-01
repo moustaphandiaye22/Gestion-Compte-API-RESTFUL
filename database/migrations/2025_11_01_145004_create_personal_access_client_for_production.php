@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // Insérer le client d'accès personnel requis par Passport
-        DB::table('oauth_clients')->insert([
+        $clientId = DB::table('oauth_clients')->insertGetId([
             'user_id' => null,
             'name' => 'Laravel Personal Access Client',
             'secret' => null,
@@ -25,6 +25,13 @@ return new class extends Migration
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // Insérer également dans oauth_personal_access_clients
+        DB::table('oauth_personal_access_clients')->insert([
+            'client_id' => $clientId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
@@ -33,6 +40,10 @@ return new class extends Migration
     public function down(): void
     {
         // Supprimer le client d'accès personnel
-        DB::table('oauth_clients')->where('personal_access_client', 1)->delete();
+        $client = DB::table('oauth_clients')->where('personal_access_client', 1)->first();
+        if ($client) {
+            DB::table('oauth_personal_access_clients')->where('client_id', $client->id)->delete();
+            DB::table('oauth_clients')->where('id', $client->id)->delete();
+        }
     }
 };
