@@ -12,6 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Supprimer les clients existants pour éviter les conflits
+        $existingClients = DB::table('oauth_clients')->where('personal_access_client', 1)->get();
+
+        foreach ($existingClients as $client) {
+            DB::table('oauth_personal_access_clients')->where('client_id', $client->id)->delete();
+            DB::table('oauth_clients')->where('id', $client->id)->delete();
+        }
+
         // Insérer le client d'accès personnel requis par Passport
         $clientId = DB::table('oauth_clients')->insertGetId([
             'user_id' => null,
