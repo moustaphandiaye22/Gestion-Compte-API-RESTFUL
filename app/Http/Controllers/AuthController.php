@@ -36,8 +36,8 @@ class AuthController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="raymond25@example.com"),
-     *             @OA\Property(property="password", type="string", example="password")
+     *             @OA\Property(property="email", type="string", format="email", example="admin@example.com"),
+     *             @OA\Property(property="password", type="string", example="password123")
      *         )
      *     ),
      *     @OA\Response(
@@ -49,7 +49,7 @@ class AuthController extends Controller
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="user", type="object",
      *                     @OA\Property(property="id", type="integer", example=1),
-     *                     @OA\Property(property="email", type="string", example="raymond25@example.com"),
+     *                     @OA\Property(property="email", type="string", example="admin@example.com"),
      *                     @OA\Property(property="role", type="string", example="admin")
      *                 ),
      *                 @OA\Property(property="access_token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."),
@@ -151,6 +151,7 @@ class AuthController extends Controller
 
             // Créer un nouveau token avec scope et claims
             $token = $user->createToken('Personal Access Token')->accessToken;
+            
             $tokenWithClaims = $this->addCustomClaims($token, $user, $role);
 
             // Mettre à jour le cookie
@@ -216,7 +217,7 @@ class AuthController extends Controller
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="email", type="string", example="samson.weissnat@example.com"),
+     *                 @OA\Property(property="email", type="string", example="admin@example.com"),
      *                 @OA\Property(property="role", type="string", example="admin")
      *             )
      *         )
