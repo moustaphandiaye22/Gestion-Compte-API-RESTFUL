@@ -16,9 +16,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Removed Sanctum route to avoid confusion with Passport (we use auth:api / Passport tokens).
+// If you need a simple /user endpoint, use the v1 route protected by auth:api already defined below.
 
 
 // Routes d'authentification (sans authentification requise)
@@ -29,30 +28,27 @@ Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
     Route::get('auth/user', [AuthController::class, 'user'])->middleware(['auth:api', 'auth.api'])->name('auth.user');
 });
 
-// Routes API version 1 (avec authentification)
-Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(function () {
-
-    /**
-      * Routes pour les comptes
-      */
-    Route::apiResource('comptes', CompteController::class)->parameters([
-          'comptes' => 'compte'
-      ]);
+// Public routes for comptes (index, store, show, search, archives)
+Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
+    Route::get('comptes', [CompteController::class, 'index'])->name('comptes.index');
+    Route::post('comptes', [CompteController::class, 'store'])->name('comptes.store');
+    Route::get('comptes/{compte}', [CompteController::class, 'show'])->name('comptes.show');
 
     // Route spécifique pour les comptes archivés (cloud pour épargne)
-    Route::get('comptes-archives', [CompteController::class, 'archives'])
-            ->name('comptes.archives');
+    Route::get('comptes-archives', [CompteController::class, 'archives'])->name('comptes.archives');
+
+    // Routes de recherche de comptes (public)
+    Route::get('comptes/recherche/{numero}', [CompteController::class, 'rechercheParNumero'])->name('comptes.recherche.numero');
+    Route::get('comptes/recherche/cni/{cni}', [CompteController::class, 'rechercheParCni'])->name('comptes.recherche.cni');
+});
+
+// Protected routes for comptes (admin actions)
+Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(function () {
+    Route::patch('comptes/{compte}', [CompteController::class, 'update'])->name('comptes.update');
+    Route::delete('comptes/{compte}', [CompteController::class, 'destroy'])->name('comptes.destroy');
 
     // Route pour bloquer un compte (admin seulement)
     Route::post('comptes/{compteId}/bloquer', [CompteController::class, 'bloquer'])
             ->middleware('role:admin')
             ->name('comptes.bloquer');
-
-    // Routes de recherche de comptes
-    Route::get('comptes/recherche/{numero}', [CompteController::class, 'rechercheParNumero'])
-            ->name('comptes.recherche.numero');
-
-    Route::get('comptes/recherche/cni/{cni}', [CompteController::class, 'rechercheParCni'])
-            ->name('comptes.recherche.cni');
-
 });
