@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => 'smtp',
+    'default' => env('MAIL_MAILER', 'smtp'),
 
     /*
     |--------------------------------------------------------------------------
@@ -44,6 +44,11 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
+        ],
+
+        'log' => [
+            'transport' => 'log',
+            'channel' => env('MAIL_LOG_CHANNEL'),
         ],
 
         'ses' => [
@@ -80,6 +85,14 @@ return [
         ],
 
         'failover' => [
+            'transport' => 'failover',
+            'mailers' => [
+                'smtp',
+                'log',
+            ],
+        ],
+
+        'production_safe' => [
             'transport' => 'failover',
             'mailers' => [
                 'smtp',

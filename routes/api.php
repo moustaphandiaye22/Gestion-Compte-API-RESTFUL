@@ -16,9 +16,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Removed Sanctum route to avoid confusion with Passport (we use auth:api / Passport tokens).
-// If you need a simple /user endpoint, use the v1 route protected by auth:api already defined below.
-
 
 // Routes d'authentification (sans authentification requise)
 Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
@@ -28,16 +25,16 @@ Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
     Route::get('auth/user', [AuthController::class, 'user'])->middleware(['auth:api', 'auth.api'])->name('auth.user');
 });
 
-// Public routes for comptes (index, store, show, search, archives)
-Route::prefix('v1')->middleware(['rating', 'logging'])->group(function () {
+// Protected routes for comptes (index, store, show, archives, search)
+Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(function () {
     Route::get('comptes', [CompteController::class, 'index'])->name('comptes.index');
     Route::post('comptes', [CompteController::class, 'store'])->name('comptes.store');
     Route::get('comptes/{compte}', [CompteController::class, 'show'])->name('comptes.show');
 
-    // Route spécifique pour les comptes archivés (cloud pour épargne)
-    Route::get('comptes-archives', [CompteController::class, 'archives'])->name('comptes.archives');
+    // Route spécifique pour les comptes archivés (admin seulement)
+    Route::get('comptes-archives', [CompteController::class, 'archives'])->middleware('role:admin')->name('comptes.archives');
 
-    // Routes de recherche de comptes (public)
+    // Routes de recherche de comptes
     Route::get('comptes/recherche/{numero}', [CompteController::class, 'rechercheParNumero'])->name('comptes.recherche.numero');
     Route::get('comptes/recherche/cni/{cni}', [CompteController::class, 'rechercheParCni'])->name('comptes.recherche.cni');
 });

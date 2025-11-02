@@ -83,21 +83,22 @@ class AuthController extends Controller
         $role = $user->userable_type === 'App\\Models\\Admin' ? 'admin' : 'client';
 
         // Créer le token avec scope et claims personnalisés
-        $token = $user->createToken('Personal Access Token')->accessToken;
+        $tokenResult = $user->createToken('Personal Access Token');
+        $token = $tokenResult->accessToken;
 
         // Ajouter des claims personnalisés au token
         $tokenWithClaims = $this->addCustomClaims($token, $user, $role);
+
+        // Générer le refresh token
+        $refreshToken = $this->generateRefreshToken($user);
 
         // Stocker le token dans un cookie sécurisé
         Cookie::queue('access_token', $tokenWithClaims, 15 * 24 * 60, '/', null, true, true); // 15 jours
 
         return $this->successResponse([
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'role' => $role,
-            ],
+
             'access_token' => $tokenWithClaims,
+            'refresh_token' => $refreshToken,
             'token_type' => 'Bearer',
             'expires_in' => 15 * 24 * 60 * 60, // 15 jours en secondes
         ], 'Connexion réussie');
@@ -241,6 +242,20 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return $this->errorResponse('Authentification requise', 401, 'UNAUTHENTICATED');
         }
+    }
+
+    /**
+     * Générer un refresh token
+     */
+    private function generateRefreshToken($user)
+    {
+        // Créer un refresh token séparé avec une durée de vie plus longue
+        $refreshTokenResult = $user->createToken('Refresh Token');
+        $refreshToken = $refreshTokenResult->accessToken;
+
+        // Vous pouvez stocker le refresh token dans la base de données ou le crypter
+        // Pour cet exemple, nous retournons simplement le token généré
+        return $refreshToken;
     }
 
     /**

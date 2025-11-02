@@ -34,9 +34,21 @@ class SendWelcomeEmailJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            Mail::to($this->client->email)->send(new ClientWelcomeMail($this->client, $this->password));
+            // Vérifier que le client existe toujours
+            if (!$this->client) {
+                Log::warning('Client not found for welcome email job');
+                return;
+            }
+
+            // Utiliser le mailer de fallback en production si nécessaire
+            $mailer = app()->environment('production') ? 'production_safe' : null;
+
+            Mail::mailer($mailer)->to($this->client->email)->send(new ClientWelcomeMail($this->client, $this->password));
+
+            Log::info('Welcome email sent successfully to: ' . $this->client->email);
         } catch (\Exception $e) {
             Log::error('Email sending failed: ' . $e->getMessage());
+            // Ne pas relancer l'exception pour éviter les retries inutiles
         }
     }
 }

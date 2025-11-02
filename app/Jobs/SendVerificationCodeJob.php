@@ -31,6 +31,12 @@ class SendVerificationCodeJob implements ShouldQueue
     public function handle(SmsServiceInterface $smsService): void
     {
         try {
+            // Vérifier que le client et son user existent toujours
+            if (!$this->client || !$this->client->user) {
+                Log::warning('Client or user not found for verification code job');
+                return;
+            }
+
             $message = "Votre code est: {$this->client->user->code}";
             $smsService->send($this->client->telephone, $message);
         } catch (\Exception $e) {

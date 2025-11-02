@@ -51,6 +51,7 @@ class CompteController extends Controller
      *     path="/ndiaye/v1/comptes",
      *     summary="Lister tous les comptes",
      *     description="Liste tous les comptes avec filtrage, tri et pagination. Admin peut voir tous les comptes, Client ne voit que ses comptes. Seuls les comptes non supprimés, de type cheque ou epargne, et actifs sont retournés.",
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -135,14 +136,25 @@ class CompteController extends Controller
      *                 @OA\Property(property="last", type="string", example="/ndiaye/v1/comptes?page=3&limit=10")
      *             )
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
      *     )
      * )
      */
     public function index(ListComptesRequest $request)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
-        $clientId = null;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+        $clientId = $isAdmin ? null : $user->userable_id;
 
         // Récupération des comptes avec le service
         $comptes = $this->compteService->getComptesWithFilters($request, $clientId);
@@ -158,6 +170,7 @@ class CompteController extends Controller
       *     path="/ndiaye/v1/comptes",
       *     summary="Créer un nouveau compte",
       *     description="Crée un nouveau compte bancaire. Vérifie l'existence du client, le crée si nécessaire, génère un mot de passe et un code, crée le compte, effectue un dépôt initial, et envoie des notifications par email et SMS.",
+      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -211,11 +224,30 @@ class CompteController extends Controller
       *                 )
       *             )
       *         )
+      *     ),
+      *     @OA\Response(
+      *         response=401,
+      *         description="Authentification requise",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=false),
+      *             @OA\Property(property="error", type="object",
+      *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+      *                 @OA\Property(property="message", type="string", example="Authentification requise")
+      *             )
+      *         )
       *     )
       * )
       */
     public function store(StoreCompteRequest $request)
     {
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+
+        // Authorize creation - only admins can create accounts
+        if (!$isAdmin) {
+            $this->authorize('create', Compte::class);
+        }
+
         $data = $request->validated();
 
         return DB::transaction(function () use ($data) {
@@ -228,7 +260,7 @@ class CompteController extends Controller
             // Create initial deposit transaction
             $this->createInitialDeposit($compte, $data['soldeInitial']);
 
-            // Dispatch event for notifications
+            // Dispatch event for notifications only if client was newly created
             if ($password) {
                 event(new \App\Events\ClientCreated($client, $password));
             }
@@ -326,7 +358,8 @@ class CompteController extends Controller
        * @OA\Get(
        *     path="/ndiaye/v1/comptes/{id}",
        *     summary="Afficher un compte spécifique",
-       *     description="Récupère un compte spécifique par ID. Pour le moment, sans authentification, traiter comme admin. Recherche d'abord en local pour les comptes actifs (cheque/epargne), puis en serverless si non trouvé.",
+       *     description="Récupère un compte spécifique par ID. Admin peut voir tous les comptes, Client ne voit que ses comptes. Recherche d'abord en local pour les comptes actifs (cheque/epargne), puis en serverless si non trouvé.",
+       *     security={{"bearerAuth":{}}},
        *     @OA\Parameter(
        *         name="id",
        *         in="path",
@@ -357,6 +390,17 @@ class CompteController extends Controller
        *         )
        *     ),
        *     @OA\Response(
+       *         response=401,
+       *         description="Authentification requise",
+       *         @OA\JsonContent(
+       *             @OA\Property(property="success", type="boolean", example=false),
+       *             @OA\Property(property="error", type="object",
+       *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+       *                 @OA\Property(property="message", type="string", example="Authentification requise")
+       *             )
+       *         )
+       *     ),
+       *     @OA\Response(
        *         response=404,
        *         description="Compte not found",
        *         @OA\JsonContent(
@@ -372,17 +416,22 @@ class CompteController extends Controller
        *     )
        * )
        */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
-        $clientId = null;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+        $clientId = $isAdmin ? null : $user->userable_id;
 
         // Use service to find account with search strategy
         $compte = $this->compteService->findCompteById($id, $clientId);
 
         if (!$compte) {
             throw new CompteNotFoundException();
+        }
+
+        // Authorize viewing the account
+        if (!$isAdmin) {
+            $this->authorize('view', $compte);
         }
 
         // Load client relationship for the response
@@ -397,6 +446,7 @@ class CompteController extends Controller
      *     path="/ndiaye/v1/comptes/{compteId}",
      *     summary="Mettre à jour les informations du client",
      *     description="Met à jour les informations du client associé à un compte. Tous les champs sont optionnels mais au moins un champ doit être fourni.",
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="compteId",
      *         in="path",
@@ -451,6 +501,17 @@ class CompteController extends Controller
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
      *         response=404,
      *         description="Compte not found",
      *         @OA\JsonContent(
@@ -465,8 +526,8 @@ class CompteController extends Controller
      */
     public function update(UpdateCompteRequest $request, string $compteId)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
 
         // Find the account
         $compte = Compte::find($compteId);
@@ -474,7 +535,7 @@ class CompteController extends Controller
             throw new CompteNotFoundException();
         }
 
-        // Authorize
+        // Authorize update
         if (!$isAdmin) {
             $this->authorize('update', $compte);
         }
@@ -520,6 +581,7 @@ class CompteController extends Controller
      *     path="/ndiaye/v1/comptes/{id}",
      *     summary="Supprimer un compte",
      *     description="Supprime un compte de manière soft (met à jour le statut à 'Ferme' et définit la date de fermeture). Accessible uniquement aux administrateurs.",
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -542,13 +604,13 @@ class CompteController extends Controller
      *         )
      *     ),
      *     @OA\Response(
-     *         response=404,
-     *         description="Compte not found",
+     *         response=401,
+     *         description="Authentification requise",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
-     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
      *             )
      *         )
      *     ),
@@ -562,13 +624,24 @@ class CompteController extends Controller
      *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
      *             )
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
+     *             )
+     *         )
      *     )
      * )
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
 
         // Find the account
         $compte = Compte::find($id);
@@ -581,10 +654,8 @@ class CompteController extends Controller
             return $this->errorResponse('Seuls les comptes actifs peuvent être supprimés.', 400, 'VALIDATION_ERROR');
         }
 
-        // Authorize the user
-        if ($isAdmin) {
-            // Proceed as admin
-        } else {
+        // Authorize deletion
+        if (!$isAdmin) {
             $this->authorize('delete', $compte);
         }
 
@@ -605,6 +676,7 @@ class CompteController extends Controller
       *     path="/ndiaye/v1/comptes-archives",
       *     summary="[CONSULTATION] Récupérer les comptes archivés",
       *     description="Liste tous les comptes archivés (statut 'Supprime') avec pagination. Accessible uniquement aux administrateurs. Cette endpoint permet de consulter les comptes qui ont été archivés automatiquement ou manuellement.",
+      *     security={{"bearerAuth":{}}},
       *     @OA\Parameter(
       *         name="page",
       *         in="query",
@@ -628,11 +700,41 @@ class CompteController extends Controller
       *             @OA\Property(property="pagination", type="object"),
       *             @OA\Property(property="links", type="object")
       *         )
+      *     ),
+      *     @OA\Response(
+      *         response=401,
+      *         description="Authentification requise",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=false),
+      *             @OA\Property(property="error", type="object",
+      *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+      *                 @OA\Property(property="message", type="string", example="Authentification requise")
+      *             )
+      *         )
+      *     ),
+      *     @OA\Response(
+      *         response=403,
+      *         description="Accès refusé - Administrateur requis",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=false),
+      *             @OA\Property(property="error", type="object",
+      *                 @OA\Property(property="code", type="string", example="INSUFFICIENT_PERMISSIONS"),
+      *                 @OA\Property(property="message", type="string", example="Permissions insuffisantes. Seuls les administrateurs peuvent accéder aux archives.")
+      *             )
+      *         )
       *     )
       * )
       */
-    public function archives()
+    public function archives(Request $request)
     {
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+
+        // Authorize viewing archives - only admins can view archives
+        if (!$isAdmin) {
+            $this->authorize('viewArchives', Compte::class);
+        }
+
         // For archived Epargne accounts, fetch from cloud
         if (request('type') === 'Epargne' || !request('type')) {
             // Simulate fetching from cloud
@@ -679,6 +781,7 @@ class CompteController extends Controller
      *     path="/ndiaye/v1/comptes/{compteId}/bloquer",
      *     summary="[ADMIN] Bloquer un compte Epargne - Géré par les Jobs",
      *     description="Cette endpoint est réservée aux administrateurs pour bloquer manuellement un compte Epargne. L'archivage automatique est géré par les Jobs programmés.",
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="compteId",
      *         in="path",
@@ -722,6 +825,28 @@ class CompteController extends Controller
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Accès refusé - Administrateur requis",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="INSUFFICIENT_PERMISSIONS"),
+     *                 @OA\Property(property="message", type="string", example="Permissions insuffisantes. Seuls les administrateurs peuvent bloquer des comptes.")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
      *         response=404,
      *         description="Compte not found",
      *         @OA\JsonContent(
@@ -731,24 +856,13 @@ class CompteController extends Controller
      *                 @OA\Property(property="message", type="string", example="Le compte avec l'ID spécifié n'existe pas")
      *             )
      *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="error", type="object",
-     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
-     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas les permissions nécessaires")
-     *             )
-     *         )
      *     )
      * )
      */
     public function bloquer(BloquerCompteRequest $request, string $compteId)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
 
         // Find the account
         $compte = Compte::find($compteId);
@@ -766,9 +880,9 @@ class CompteController extends Controller
             return $this->errorResponse('Le compte est déjà bloqué.', 400, 'VALIDATION_ERROR');
         }
 
-        // Authorize
+        // Authorize blocking - only admins can block accounts
         if (!$isAdmin) {
-            $this->authorize('update', $compte);
+            return $this->errorResponse('Permissions insuffisantes. Seuls les administrateurs peuvent bloquer des comptes.', 403, 'INSUFFICIENT_PERMISSIONS');
         }
 
         // Get validated data
@@ -812,8 +926,8 @@ class CompteController extends Controller
 
     public function debloquer(DebloquerCompteRequest $request, string $compteId)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
 
         // Find the account
         $compte = Compte::find($compteId);
@@ -831,9 +945,9 @@ class CompteController extends Controller
             return $this->errorResponse('Le compte n\'est pas actuellement bloqué.', 400, 'VALIDATION_ERROR');
         }
 
-        // Authorize
+        // Authorize unblocking - only admins can unblock accounts
         if (!$isAdmin) {
-            $this->authorize('update', $compte);
+            return $this->errorResponse('Permissions insuffisantes. Seuls les administrateurs peuvent débloquer des comptes.', 403, 'INSUFFICIENT_PERMISSIONS');
         }
 
         // Get validated data
@@ -853,10 +967,10 @@ class CompteController extends Controller
         return $this->successResponse(new CompteResource($compte), 'Compte débloqué avec succès', 200);
     }
 
-    public function archiver(string $compte)
+    public function archiver(Request $request, string $compte)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
 
         // Find the account
         $compte = Compte::find($compte);
@@ -864,9 +978,9 @@ class CompteController extends Controller
             throw new CompteNotFoundException();
         }
 
-        // Authorize
+        // Authorize archiving - only admins can archive accounts
         if (!$isAdmin) {
-            $this->authorize('delete', $compte);
+            return $this->errorResponse('Permissions insuffisantes. Seuls les administrateurs peuvent archiver des comptes.', 403, 'INSUFFICIENT_PERMISSIONS');
         }
 
         // Archive the account
@@ -887,6 +1001,7 @@ class CompteController extends Controller
      *     path="/ndiaye/v1/comptes/recherche/{numero}",
      *     summary="Rechercher un compte par numéro",
      *     description="Recherche un compte par son numéro. Si le compte est archivé (Épargne), il est récupéré depuis Neon.",
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="numero",
      *         in="path",
@@ -916,6 +1031,17 @@ class CompteController extends Controller
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
      *         response=404,
      *         description="Compte not found",
      *         @OA\JsonContent(
@@ -928,17 +1054,22 @@ class CompteController extends Controller
      *     )
      * )
      */
-    public function rechercheParNumero(string $numero)
+    public function rechercheParNumero(Request $request, string $numero)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
-        $clientId = null;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+        $clientId = $isAdmin ? null : $user->userable_id;
 
         // Use service to find account by numero
         $compte = $this->compteService->findCompteByNumero($numero, $clientId);
 
         if (!$compte) {
             throw new CompteNotFoundException();
+        }
+
+        // Authorize viewing the account
+        if (!$isAdmin) {
+            $this->authorize('view', $compte);
         }
 
         // Load client relationship for the response
@@ -952,6 +1083,7 @@ class CompteController extends Controller
      *     path="/ndiaye/v1/comptes/recherche/cni/{cni}",
      *     summary="Rechercher un compte par CNI",
      *     description="Recherche un compte par le CNI du client. Si le compte est archivé (Épargne), il est récupéré depuis Neon.",
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="cni",
      *         in="path",
@@ -981,6 +1113,17 @@ class CompteController extends Controller
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
      *         response=404,
      *         description="Compte not found",
      *         @OA\JsonContent(
@@ -993,11 +1136,11 @@ class CompteController extends Controller
      *     )
      * )
      */
-    public function rechercheParCni(string $cni)
+    public function rechercheParCni(Request $request, string $cni)
     {
-        // Pour le moment, sans authentification, traiter comme admin
-        $isAdmin = true;
-        $clientId = null;
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+        $clientId = $isAdmin ? null : $user->userable_id;
 
         // Use service to find account by CNI
         $compte = $this->compteService->findCompteByCni($cni, $clientId);
