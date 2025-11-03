@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompteController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,10 @@ Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(functi
     Route::post('comptes', [CompteController::class, 'store'])->name('comptes.store');
     Route::get('comptes/{compte}', [CompteController::class, 'show'])->name('comptes.show');
 
+    // Routes pour les transactions et statistiques d'un compte
+    Route::get('comptes/{compteId}/transactions', [CompteController::class, 'getTransactions'])->name('comptes.transactions');
+    Route::get('comptes/{compteId}/statistiques', [CompteController::class, 'getStatistiques'])->name('comptes.statistiques');
+
     // Route spécifique pour les comptes archivés (admin seulement)
     Route::get('comptes-archives', [CompteController::class, 'archives'])->middleware('role:admin')->name('comptes.archives');
 
@@ -48,4 +53,9 @@ Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(functi
     Route::post('comptes/{compteId}/bloquer', [CompteController::class, 'bloquer'])
             ->middleware('role:admin')
             ->name('comptes.bloquer');
+});
+
+// Dashboard routes (admin and client access)
+Route::prefix('v1')->middleware(['auth:api', 'rating', 'logging'])->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 });
