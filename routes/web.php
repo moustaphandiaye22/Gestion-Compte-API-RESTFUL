@@ -18,5 +18,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/docs-json', [SwaggerController::class, 'docs'])->name('swagger-lume.docs');
-Route::get('/docs', [SwaggerController::class, 'api'])->name('swagger-lume.api');
+Route::get('/docs-json', [SwaggerController::class, 'docs'])->name('swagger.docs');
+Route::get('/docs', [SwaggerController::class, 'api'])->name('swagger.api');
