@@ -343,7 +343,7 @@ class CompteApiTest extends TestCase
             'soldeInitial' => 50000,
             'client' => [
                 'titulaire' => 'John Doe',
-                'nci' => '1234567890123', // Does not start with 19 or 20
+                'nci' => '1234567890123A', // Does not start with 19 or 20
                 'email' => 'john.doe@example.com',
                 'telephone' => '+221771234567', // Valid telephone
                 'adresse' => 'Dakar, Senegal'

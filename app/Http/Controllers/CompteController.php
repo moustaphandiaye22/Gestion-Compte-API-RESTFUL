@@ -14,6 +14,7 @@ use App\Models\Client;
 use App\Models\User;
 use App\Models\Transaction;
 use App\Services\CompteService;
+use App\Services\TransactionService;
 use App\Traits\ApiResponseTrait;
 use App\Exceptions\CompteNotFoundException;
 use App\Exceptions\UnauthorizedAccessException;
@@ -40,10 +41,12 @@ class CompteController extends Controller
     use ApiResponseTrait;
 
     protected CompteService $compteService;
+    protected TransactionService $transactionService;
 
-    public function __construct(CompteService $compteService)
+    public function __construct(CompteService $compteService, TransactionService $transactionService)
     {
         $this->compteService = $compteService;
+        $this->transactionService = $transactionService;
     }
 
     /**
@@ -1153,5 +1156,197 @@ class CompteController extends Controller
         $compte->load('client');
 
         return $this->successResponse(new CompteResource($compte));
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/ndiaye/v1/comptes/{compteId}/transactions",
+     *     summary="Voir la liste des transactions d'un compte",
+     *     description="Récupère la liste des transactions d'un compte spécifique. Les clients ne voient que leurs propres comptes, les admins voient tous les comptes.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="compteId",
+     *         in="path",
+     *         description="L'ID du compte",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Numéro de page (default: 1)",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Nombre d'éléments par page (default: 10, max: 100)",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Transactions récupérées avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                 @OA\Property(property="numeroCompte", type="string", example="CPT-2025-ABC123"),
+     *                 @OA\Property(property="type", type="string", example="Depot"),
+     *                 @OA\Property(property="montant", type="number", example=50000),
+     *                 @OA\Property(property="dateTransaction", type="string", format="date-time", example="2025-11-02T10:30:00Z"),
+     *                 @OA\Property(property="description", type="string", example="Dépôt via mobile"),
+     *                 @OA\Property(property="statut", type="string", example="Validee")
+     *             )),
+     *             @OA\Property(property="pagination", type="object",
+     *                 @OA\Property(property="currentPage", type="integer", example=1),
+     *                 @OA\Property(property="totalPages", type="integer", example=3),
+     *                 @OA\Property(property="totalItems", type="integer", example=25),
+     *                 @OA\Property(property="itemsPerPage", type="integer", example=10),
+     *                 @OA\Property(property="hasNext", type="boolean", example=true),
+     *                 @OA\Property(property="hasPrevious", type="boolean", example=false)
+     *             ),
+     *             @OA\Property(property="links", type="object",
+     *                 @OA\Property(property="self", type="string", example="/ndiaye/v1/comptes/123/transactions?page=1&limit=10"),
+     *                 @OA\Property(property="next", type="string", example="/ndiaye/v1/comptes/123/transactions?page=2&limit=10"),
+     *                 @OA\Property(property="first", type="string", example="/ndiaye/v1/comptes/123/transactions?page=1&limit=10"),
+     *                 @OA\Property(property="last", type="string", example="/ndiaye/v1/comptes/123/transactions?page=3&limit=10")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Accès refusé",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
+     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas accès à ce compte")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte spécifié n'existe pas")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function getTransactions(Request $request, string $compteId)
+    {
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+        $clientId = $isAdmin ? null : $user->userable_id;
+
+        $limit = $request->get('limit', 10);
+        $data = $this->transactionService->getAccountTransactions($compteId, $clientId, $limit);
+
+        if (isset($data['error'])) {
+            return $this->errorResponse($data['error'], 403, 'UNAUTHORIZED');
+        }
+
+        return $this->successResponse($data, 'Transactions récupérées avec succès');
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/ndiaye/v1/comptes/{compteId}/statistiques",
+     *     summary="Voir les statistiques d'un compte",
+     *     description="Récupère les statistiques détaillées d'un compte spécifique: total dépôt, total retrait, nombre de transactions, dernière transaction.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="compteId",
+     *         in="path",
+     *         description="L'ID du compte",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Statistiques récupérées avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="totalDepot", type="number", example=500000),
+     *                 @OA\Property(property="totalRetrait", type="number", example=150000),
+     *                 @OA\Property(property="totalTransfert", type="number", example=50000),
+     *                 @OA\Property(property="nombreTransactions", type="integer", example=25),
+     *                 @OA\Property(property="solde", type="number", example=300000),
+     *                 @OA\Property(property="derniereTransaction", type="object",
+     *                     @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *                     @OA\Property(property="type", type="string", example="Depot"),
+     *                     @OA\Property(property="montant", type="number", example=50000),
+     *                     @OA\Property(property="dateTransaction", type="string", format="date-time", example="2025-11-02T10:30:00Z"),
+     *                     @OA\Property(property="description", type="string", example="Dépôt via mobile")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Authentification requise",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHENTICATED"),
+     *                 @OA\Property(property="message", type="string", example="Authentification requise")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Accès refusé",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="UNAUTHORIZED"),
+     *                 @OA\Property(property="message", type="string", example="Vous n'avez pas accès à ce compte")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Compte not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="error", type="object",
+     *                 @OA\Property(property="code", type="string", example="COMPTE_NOT_FOUND"),
+     *                 @OA\Property(property="message", type="string", example="Le compte spécifié n'existe pas")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function getStatistiques(Request $request, string $compteId)
+    {
+        $user = $request->user();
+        $isAdmin = $user->userable_type === 'App\\Models\\Admin';
+        $clientId = $isAdmin ? null : $user->userable_id;
+
+        $data = $this->transactionService->getAccountStatistics($compteId, $clientId);
+
+        if (isset($data['error'])) {
+            return $this->errorResponse($data['error'], 403, 'UNAUTHORIZED');
+        }
+
+        return $this->successResponse($data, 'Statistiques du compte récupérées avec succès');
     }
 }

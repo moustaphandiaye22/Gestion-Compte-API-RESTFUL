@@ -354,4 +354,5 @@ class CompteService
             'cheque' => (clone $query)->where('type', 'Cheque')->count(),
         ];
     }
+
 }
