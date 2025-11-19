@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Jobs\ArchiveExpiredBlockedAccounts;
+use App\Jobs\ArchiveWeeklyTransactions;
 use App\Jobs\UnarchiveExpiredBlockedAccounts;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -21,6 +22,9 @@ class Kernel extends ConsoleKernel
 
          // Schedule archiving job after (archive newly expired accounts)
          $schedule->job(new ArchiveExpiredBlockedAccounts)->dailyAt('02:00');
+
+         // Schedule weekly transaction archiving (every Sunday at 03:00)
+         $schedule->job(new ArchiveWeeklyTransactions)->weeklyOn(0, '03:00');
     }
 
     /**
